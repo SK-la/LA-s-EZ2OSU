@@ -1,3 +1,4 @@
+#ui_styling.py
 import pathlib
 from PyQt5 import QtGui, QtWidgets, QtCore
 

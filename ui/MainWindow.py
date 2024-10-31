@@ -1,3 +1,4 @@
+#MainWindow.py
 import pathlib
 from PyQt5 import QtWidgets, QtGui, QtCore
 from Dispatch_file import process_file

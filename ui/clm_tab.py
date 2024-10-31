@@ -1,3 +1,4 @@
+#clm_tab.py
 from PyQt5 import QtWidgets, QtGui, QtCore
 import ui.ui_styling  # 导入美化脚本
 

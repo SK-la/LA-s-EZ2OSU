@@ -1,4 +1,3 @@
-# test_script.py
 
 def cal_notex(CS, x):
     note_x = int((x - 1) * 512 / CS) + int(256 / CS)

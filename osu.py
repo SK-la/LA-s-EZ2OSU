@@ -1,7 +1,5 @@
 # osu.py
 
-
-
 def generate_osu_file(config, info_obj, events, Samples, SongLg, notes_obj, new_CS):
     if info_obj.vdo:
         vdo=f'\nVideo,0,"{info_obj.vdo}"'
