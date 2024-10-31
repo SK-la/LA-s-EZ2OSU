@@ -1,4 +1,4 @@
-# LA-s-EZ2OSU
+# LA's-EZ2OSU
 这是一个.BMSON to .OSU的转换工具，
 目前支持：
   1. bmson 5/7/9/14 K 转 .osu;
