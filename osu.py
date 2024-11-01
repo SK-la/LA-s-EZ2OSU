@@ -1,6 +1,6 @@
 # osu.py
 
-def generate_osu_file(config, info, SV, offset, Samples, SongLg, notes_obj, new_CS):
+def generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs, settings):
     vdo= '' if info.vdo == '' else f'\nVideo,0,"{info.vdo}"'
 
     osu_content = f"""osu file format v14
@@ -8,16 +8,15 @@ def generate_osu_file(config, info, SV, offset, Samples, SongLg, notes_obj, new_
 [General]
 AudioFilename: {info.song}
 AudioLeadIn: 0
-PreviewTime: {int(SongLg * 0.4)}
+PreviewTime: {int(song_lg * 0.4)}
 Countdown: 0
 SampleSet: Normal
 StackLeniency: 0.7
-Mode: 3
+Mode: {info.osumode}
 LetterboxInBreaks: 0
 StoryFireInFront: 0
 SpecialStyle: 0
 WidescreenStoryboard: 0
-SamplesMatchPlaybackRate: 1
 
 [Editor]
 Bookmarks: 0
@@ -33,14 +32,14 @@ Artist:{info.artist}
 ArtistUnicode:{info.artist}
 Creator:{config.creator}
 Version:{info.ver}
-Source:{config.source}
+Source:{settings.source}
 Tags:{info.tags}{config.tags}
 BeatmapID:0
 BeatmapSetID:-1
 
 [Difficulty]
 HPDrainRate:{config.HP}
-CircleSize:{new_CS}
+CircleSize:{new_cs}
 OverallDifficulty:{config.OD}
 ApproachRate:5
 SliderMultiplier:1
@@ -58,13 +57,13 @@ SliderTickRate:1
 //Storyboard Sound Samples
 """
     # 将 Samples 列表转换为字符串，每个样本信息占一行
-    samples_str = '\n'.join([str(sample) for sample in Samples]) if Samples else ""
+    samples_str = '\n'.join([str(sample) for sample in samples]) if samples else ""
 
     osu_content += samples_str
 
     osu_content += "\n[TimingPoints]\n"
     osu_content += f"{offset},{info.bpms},4,1,1,100,1,0\n"
-    osu_content += SV if SV else ""
+    osu_content += sv if sv else ""
 
     osu_content += "\n\n[HitObjects]\n"
 

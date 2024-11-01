@@ -4,38 +4,41 @@ from config import get_config
 config = get_config()
 
 class Info:
-    def __init__(self, title, artist, bpm, bpms, image, resolution, MpB, lv, ver, diff, song, tags, CS, EZmode, img, vdo, new_folder, sub_folder, osu_filename, img_filename):
+    def __init__(self, title, artist, osumode, bpm, bpms, image, resolution, m_p_b, lv, ver, diff, song, tags, cs, ez_mode, img, vdo, new_folder, sub_folder, osu_filename, img_filename):
         self.title = title
         self.artist = artist
         self.bpm = bpm
         self.bpms = bpms
         self.image = image
         self.resolution = resolution
-        self.MpB = MpB
+        self.MpB = m_p_b
         self.lv = lv
         self.ver = ver
         self.diff = diff
         self.song = song
         self.tags = tags
-        self.CS = CS
-        self.EZmode = EZmode
+        self.CS = cs
+        self.EZmode = ez_mode
         self.img = img
         self.vdo = vdo
         self.new_folder = new_folder
         self.sub_folder = sub_folder
         self.osu_filename = osu_filename
         self.img_filename = img_filename
+        self.osumode = osumode
 
-def get_info(data, config):
+def get_info(data, config, settings):
     mode_hint = data['info'].get('mode_hint', '').split('-')[-1]
-    CS = {'5k': 7, '7k': 8, '9k': 9, '10k': 12, '14k': 16}.get(mode_hint, 18)
+    cs = {'5k': 7, '7k': 8, '9k': 9, '10k': 12, '14k': 16}.get(mode_hint, 18)
 
-    mode = {5: '5k', 8: '7k1s', 12: '10k2s', 16: '10k4e2s'}.get(CS, '')
+    mode = {5: '5k', 8: '7k1s', 12: '10k2s', 16: '10k4e2s'}.get(cs, '')
     level_value = data['info'].get('level', 1)
     level = f"LV.{level_value}" if level_value != 1 else ''
 
     chart_name = data['info'].get('chart_name', '').split('1p')
-    EZmode = chart_name[0].strip().upper() if chart_name else ''
+    ez_mode = chart_name[0].strip().upper() if chart_name else ''
+    osumode = 2 if ez_mode == 'catch' else 3
+        
     chart = chart_name[1].strip().upper() if len(chart_name) > 1 and chart_name[1].strip() else 'NM'
 
     eyecatch_image = data['info'].get('eyecatch_image', '')
@@ -49,16 +52,16 @@ def get_info(data, config):
         image_diff = image_ext
 
     artist = f"{config.creator}'s PACK" if config.packset == 'Y' else data['info'].get('artist', '')
-    title = config.source if config.packset == 'Y' else data['info'].get('title', '')
+    title = settings.source if config.packset == 'Y' else data['info'].get('title', '')
 
-    tags = f"{config.creator} {config.source} {mode} {EZmode} {artist} {title}"
+    tags = f"{config.creator} {settings.source} {mode} {ez_mode} {artist} {title}"
 
 
     bga_name = data.get('bga', {}).get('bga_header', [{}])[0].get('name', '')
 
     new_folder_name = f"{artist} - {title}".replace('.wav', '')
-    sub_folder_name = f"sound_{title}"
-    ver = f"[{EZmode}] {chart} {level}" if level else f"[{EZmode}] {chart}"
+    sub_folder_name = f"sound" #改
+    ver = f"[{ez_mode}] {chart} {level}" if level else f"[{ez_mode}] {chart}"
     osu_filename = f"{artist} - {title} ({config.creator}) [{ver}]"
     if config.packset == 'Y':
         osu_filename += '_pack'
@@ -71,18 +74,19 @@ def get_info(data, config):
     info = Info(
         artist=artist,
         title=title,
+        osumode=osumode,
         bpm=bpm,
         bpms=round(60000 / bpm, 12),
         resolution=resolution,
-        MpB=60000 / (bpm * resolution),
+        m_p_b=60000 / (bpm * resolution),
         lv=level,
         ver=ver,
         diff=chart,
         song=f"{artist} - {title}.wav",
         image=data['info'].get('eyecatch_image', ''),
         tags=tags,
-        CS=CS,
-        EZmode=EZmode,
+        cs=cs,
+        ez_mode=ez_mode,
         img=img_filename,
         vdo=bga_name,
         new_folder=new_folder_name,

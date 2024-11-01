@@ -2,7 +2,7 @@
 from config import get_config
 from get_info import get_info
 from conv_bmson import bms
-from SV import get_SV
+from SV import get_sv
 from Samples import get_samples
 from osu import generate_osu_file
 import json
@@ -16,19 +16,21 @@ from mod.lock_cs import lock_cs
 
 def dispatch(data, settings):
     config = get_config()
-    info = get_info(data, config) 
-    Samples,  main_audio, offset, SongLg = get_samples(data, info, settings)
-    notes_obj, CS = bms(data, info, offset)
+    info = get_info(data, config, settings) 
+    samples,  main_audio, offset, song_lg = get_samples(data, info, settings)
+    notes_obj, cs = bms(data, info, offset)
     #print("bms 函数返回的 notes_obj 内容:", notes_obj)
-    #mod
-    if settings.lock_cs_set:
-        notes_obj = lock_cs(notes_obj, CS, int(settings.lock_cs_num))
-    if settings.remove_empty_columns:
-        notes_obj, new_CS = remove_empty_columns(notes_obj, CS)
-    else: new_CS = CS
-    SV = get_SV(data, offset, info, settings) if settings.convert_sv else ''
+    new_cs = cs
+    if info.osumode == 3:
+        #mod
+        if settings.lock_cs_set:
+            notes_obj = lock_cs(notes_obj, cs, int(settings.lock_cs_num))
+        if settings.remove_empty_columns:
+            notes_obj, new_cs = remove_empty_columns(notes_obj, cs)
+
+    sv = get_sv(data, offset, info, settings) if settings.convert_sv else ''
     #print("c e c 返回的 notes_obj 类型:", type(notes_obj))
-    osu_content = generate_osu_file(config, info, SV, offset, Samples, SongLg, notes_obj, new_CS)
+    osu_content = generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs, settings)
 
 
 

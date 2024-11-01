@@ -31,6 +31,11 @@ def process_file(bmson_file, output_folder, settings):
             sub_folder.mkdir(parents=True, exist_ok=True)
             output_folder = song_folder
         else:
+            song_folder = output_folder / info.new_folder
+            song_folder.mkdir(parents=True, exist_ok=True)
+            sub_folder = song_folder / info.sub_folder
+            sub_folder.mkdir(parents=True, exist_ok=True)
+            output_folder = song_folder
             output_folder.mkdir(parents=True, exist_ok=True)
 
         files = scan_folder(bmson_file.parent)

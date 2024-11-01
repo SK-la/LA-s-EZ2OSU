@@ -1,4 +1,3 @@
-#ui_styling.py
 import pathlib
 from PyQt5 import QtGui, QtWidgets, QtCore
 
@@ -110,11 +109,18 @@ def set_stylesheet(window):
 
 line_edit_style = """
     QLineEdit {
-        border: 1px solid gray;
+        background-color: rgba(0, 0, 0, 120);
+        color: #fff;
+        padding: 10px;
         border-radius: 5px;
-        padding: 5px;
-        background: white;
+        border: 1px solid #555;
         text-align: center;  /* 数字居中显示 */
+        qproperty-alignment: 'AlignCenter';  /* 确保居中对齐 */
+    }
+    QLineEdit:focus {
+        border: 1px solid #00f;
+        text-align: center;
+        qproperty-alignment: 'AlignCenter';  /* 确保焦点状态下居中对齐 */
     }
 """
 
@@ -124,30 +130,33 @@ drag_area_style = """
     }
 """
 
-class DropLineEdit(QtWidgets.QLineEdit):
-    def __init__(self, parent=None, path_type="input"):
-        super().__init__(parent)
-        self.path_type = path_type
-        self.setAcceptDrops(True)
+radio_button_style = """
+    QRadioButton {
+        background-color: rgba(0, 0, 0, 120);
+        color: #fff;
+        padding: 5px;
+        border-radius: 5px;
+    }
+    QRadioButton::indicator {
+        width: 20px;
+        height: 20px;
+    }
+    QRadioButton::indicator::unchecked {
+        background-color: rgba(0, 0, 0, 120);
+        border: 1px solid #888;
+    }
+    QRadioButton::indicator::checked {
+        background-color: rgba(56, 86, 120, 220);
+        border: 1px solid #00f;
+    }
+"""
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        urls = event.mimeData().urls()
-        if urls:
-            path = urls[0].toLocalFile()
-            if pathlib.Path(path).is_dir():
-                self.setText(path)
-                if self.path_type == "input":
-                    self.parent().home_tab.input_tree.populate_tree(pathlib.Path(path))
-                elif self.path_type == "output":
-                    self.parent().home_tab.output_tree.populate_tree(pathlib.Path(path))
-
-def apply_glow_effect(widget):
-    glow_effect = QtWidgets.QGraphicsDropShadowEffect()
-    glow_effect.setBlurRadius(5)
-    glow_effect.setColor(QtGui.QColor(3, 3, 3, 100))
-    glow_effect.setOffset(0, 0)
-    widget.setGraphicsEffect(glow_effect)
+label_style = """
+    QLabel {
+        background-color: rgba(0, 0, 0, 120);
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+"""

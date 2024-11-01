@@ -8,15 +8,14 @@ class HomeTab(QtWidgets.QWidget):
         super().__init__(parent)
         self.parent = parent
         self.initUI()
-
-    def initUI(self):
-        layout = QtWidgets.QVBoxLayout()
-        
         # 文件夹结构树
         self.input_tree = FileTreeWidget(self, "input")
         self.input_tree.setHeaderLabel("输入文件夹结构")
         self.output_tree = FileTreeWidget(self, "output")
         self.output_tree.setHeaderLabel("输出文件夹结构")
+
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout()
         
         tree_layout = QtWidgets.QHBoxLayout()
         tree_layout.addWidget(self.input_tree)
@@ -38,7 +37,10 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
         self.clear()
         root = QtWidgets.QTreeWidgetItem(self, [str(folder_path)])
         self.add_tree_items(root, folder_path)
-        self.expandAll()
+        if self.tree_type == "input":
+            self.expandAll()
+        else:
+            self.expandToDepth(0) #默认只展开一级文件夹
 
     def add_tree_items(self, parent_item, folder_path):
         for item in folder_path.iterdir():

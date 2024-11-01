@@ -1,5 +1,4 @@
-#clm_tab.py
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 import ui.styling  # 导入美化脚本
 
 class ClmTab(QtWidgets.QWidget):
@@ -10,34 +9,34 @@ class ClmTab(QtWidgets.QWidget):
     def initUI(self):
         layout = QtWidgets.QVBoxLayout(self)
 
-        # 顶部文字说明和下拉框
-        top_controls_layout = QtWidgets.QHBoxLayout()
+        # 顶部文字说明和点选按钮
+        top_controls_layout = QtWidgets.QVBoxLayout()
         
-        # 左侧下拉框组
-        left_group = QtWidgets.QVBoxLayout()
-        left_label = QtWidgets.QLabel("转换前的K数")
-        self.k_before_combo = QtWidgets.QComboBox()
-        self.k_before_combo.addItems([str(i) for i in range(1, 17)])  # 1K到16K
-        self.k_before_combo.currentIndexChanged.connect(self.update_top_layout)
-        left_group.addWidget(left_label)
-        left_group.addWidget(self.k_before_combo)
+        # 上排点选按钮组
+        top_button_group = QtWidgets.QButtonGroup(self)
+        top_button_layout = QtWidgets.QHBoxLayout()
+        top_label = QtWidgets.QLabel("转换前的K数")
+        top_controls_layout.addWidget(top_label)
+        for i in range(4, 19):
+            button = QtWidgets.QRadioButton(str(i))
+            button.setStyleSheet(ui.styling.radio_button_style)
+            button.toggled.connect(self.update_top_layout)
+            top_button_group.addButton(button)
+            top_button_layout.addWidget(button)
+        top_controls_layout.addLayout(top_button_layout)
         
-        # 中间 "to" 文字
-        to_label = QtWidgets.QLabel("to")
-        to_label.setAlignment(QtCore.Qt.AlignCenter)
-        
-        # 右侧下拉框组
-        right_group = QtWidgets.QVBoxLayout()
-        right_label = QtWidgets.QLabel("转换后的K数")
-        self.k_after_combo = QtWidgets.QComboBox()
-        self.k_after_combo.addItems([str(i) for i in range(1, 17)])  # 1K到16K
-        self.k_after_combo.currentIndexChanged.connect(self.update_bottom_layout)
-        right_group.addWidget(right_label)
-        right_group.addWidget(self.k_after_combo)
-        
-        top_controls_layout.addLayout(left_group)
-        top_controls_layout.addWidget(to_label)
-        top_controls_layout.addLayout(right_group)
+        # 下排点选按钮组
+        bottom_button_group = QtWidgets.QButtonGroup(self)
+        bottom_button_layout = QtWidgets.QHBoxLayout()
+        bottom_label = QtWidgets.QLabel("转换后的K数")
+        top_controls_layout.addWidget(bottom_label)
+        for i in range(4, 19):
+            button = QtWidgets.QRadioButton(str(i))
+            button.setStyleSheet(ui.styling.radio_button_style)
+            button.toggled.connect(self.update_bottom_layout)
+            bottom_button_group.addButton(button)
+            bottom_button_layout.addWidget(button)
+        top_controls_layout.addLayout(bottom_button_layout)
 
         # 上下两个等高的窗口
         self.top_widget = QtWidgets.QWidget()
@@ -52,83 +51,60 @@ class ClmTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def update_top_layout(self):
-        k = int(self.k_before_combo.currentText())
-        self.top_layout = self.create_k_layout(k, self.top_layout)
+        button = self.sender()
+        if button.isChecked():
+            k = int(button.text())
+            self.top_layout = self.create_fixed_layout(k, self.top_layout)
 
     def update_bottom_layout(self):
-        k = int(self.k_after_combo.currentText())
-        self.bottom_layout = self.create_k_layout(k, self.bottom_layout)
+        button = self.sender()
+        if button.isChecked():
+            k = int(button.text())
+            self.bottom_layout = self.create_editable_layout(k, self.bottom_layout)
 
-    def create_k_layout(self, k, layout):
+    def create_fixed_layout(self, k, layout):
         # 清空当前布局
         for i in reversed(range(layout.count())):
             layout.itemAt(i).widget().deleteLater()
 
-        # 添加K个小方块
+        # 添加K个固定数字的标签
         for i in range(k):
-            line_edit = DraggableLineEdit(str(i))
-            line_edit.positionChanged.connect(self.handle_position_change)
+            label = QtWidgets.QLabel(str(i + 1))
+            label.setAlignment(QtCore.Qt.AlignCenter)
+            label.setStyleSheet(ui.styling.label_style)
+            layout.addWidget(label)
+
+        return layout
+
+    def create_editable_layout(self, k, layout):
+        # 清空当前布局
+        for i in reversed(range(layout.count())):
+            layout.itemAt(i).widget().deleteLater()
+
+        # 添加K个输入框
+        for i in range(k):
+            line_edit = AutoSwitchLineEdit()
+            line_edit.setStyleSheet(ui.styling.line_edit_style)
             layout.addWidget(line_edit)
 
         return layout
 
-    def handle_position_change(self, text, position):
-        print(f"Text: {text}, Position: {position}")
-
-class DraggableLineEdit(QtWidgets.QWidget):
-    positionChanged = QtCore.pyqtSignal(str, int)
-
-    def __init__(self, text='', parent=None):
+class AutoSwitchLineEdit(QtWidgets.QLineEdit):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.initUI(text)
+        self.setMaxLength(1)  # 每个输入框只允许输入一个字符
+        self.textChanged.connect(self.switch_focus)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.installEventFilter(self)
 
-    def initUI(self, text):
-        layout = QtWidgets.QVBoxLayout(self)
-        
-        self.line_edit = QtWidgets.QLineEdit(text)
-        self.line_edit.setReadOnly(True)
-        self.line_edit.setAlignment(QtCore.Qt.AlignCenter)  # 数字居中显示
-        self.line_edit.setStyleSheet(ui.styling.line_edit_style)  # 应用样式
-        self.line_edit.mouseDoubleClickEvent = self.enable_editing
-        self.line_edit.focusOutEvent = self.disable_editing
+    def switch_focus(self, text):
+        if len(text) == 1:
+            next_widget = self.nextInFocusChain()
+            if isinstance(next_widget, AutoSwitchLineEdit):
+                next_widget.setFocus()
+                next_widget.selectAll()  # 选择所有文本以便覆盖
 
-        self.drag_area = QtWidgets.QFrame()
-        self.drag_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.drag_area.setFixedHeight(20)
-        self.drag_area.setStyleSheet(ui.styling.drag_area_style)  # 应用样式
-        self.drag_area.mousePressEvent = self.mousePressEvent
-        self.drag_area.mouseMoveEvent = self.mouseMoveEvent
-
-        layout.addWidget(self.line_edit)
-        layout.addWidget(self.drag_area)
-        self.setLayout(layout)
-
-    def enable_editing(self, event):
-        self.line_edit.setReadOnly(False)
-
-    def disable_editing(self, event):
-        self.line_edit.setReadOnly(True)
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self.drag_start_position = event.pos()
-
-    def mouseMoveEvent(self, event):
-        if not (event.buttons() & QtCore.Qt.LeftButton):
-            return
-        if (event.pos() - self.drag_start_position).manhattanLength() < QtWidgets.QApplication.startDragDistance():
-            return
-
-        drag = QtGui.QDrag(self)
-        mime_data = QtCore.QMimeData()
-        mime_data.setText(self.line_edit.text())
-        drag.setMimeData(mime_data)
-        drag.exec_(QtCore.Qt.MoveAction)
-
-    def dropEvent(self, event):
-        if event.source() == self:
-            event.setDropAction(QtCore.Qt.MoveAction)
-            event.accept()
-            self.positionChanged.emit(self.line_edit.text(), self.pos())
-        else:
-            event.ignore()
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.FocusIn:
+            self.selectAll()
+        return super().eventFilter(source, event)

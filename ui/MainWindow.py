@@ -1,82 +1,56 @@
 # MainWindow.py
 import pathlib
+import concurrent.futures
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QStatusBar
 from PyQt5.QtGui import QCursor
+from config import get_config
 from Dispatch_file import process_file
-from ui.styling import set_window_icon, set_background_image, DropLineEdit, apply_glow_effect
-from ui.elements import setup_combobox, setup_checkboxes, setup_tabs
-from ui.osu_path import get_osu_install_path
-from config import config
+from ui.styling import set_window_icon, set_background_image
+from ui.layouts import setup_main_layout
+from ui.translations import load_translations, get_system_language
+from ui.osu_path import get_osu_songs_path
+from ui.settings import ConversionSettings
 
-class ConversionSettings:
-    def __init__(self, include_audio, include_images, remove_empty_columns, lock_cs_set, lock_cs_num, convert_sv, convert_sample_bg, auto_create_output_folder):
-        self.include_audio = include_audio
-        self.include_images = include_images
-        self.remove_empty_columns = remove_empty_columns
-        self.lock_cs_set = lock_cs_set
-        self.lock_cs_num = lock_cs_num
-        self.convert_sv = convert_sv
-        self.convert_sample_bg = convert_sample_bg
-        self.auto_create_output_folder = auto_create_output_folder
-
-class MainWindow(QtWidgets.QWidget):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setAcceptDrops(True)
-        self.settings = QtCore.QSettings("LAZ", "EZ2OSU")  # 使用 QSettings
+        self.settings = QtCore.QSettings("LAZ", "EZ2OSU")
+        self.config = get_config()
+        system_language = get_system_language()
+        self.translations = load_translations(system_language)
         self.initUI()
+        self.update_language()  # 更新界面语言
         self.load_settings()  # 加载设置
         self.move_to_cursor()
 
     def initUI(self):
         self.setWindowTitle('LAs EZ2OSU')
         self.setGeometry(100, 100, 800, 600)
-        
         set_window_icon(self)
         set_background_image(self)
 
-        main_layout = QtWidgets.QVBoxLayout(self)
-
-        input_layout = QtWidgets.QHBoxLayout()
-        self.input_path = DropLineEdit(self, "input")
-        self.input_path.setPlaceholderText("输入文件夹路径")
-        input_button = QtWidgets.QPushButton("设置输入")
-        input_button.clicked.connect(self.select_input)
-        input_layout.addWidget(self.input_path)
-        input_layout.addWidget(input_button)
-        main_layout.addLayout(input_layout)
-        
-        output_layout = QtWidgets.QHBoxLayout()
-        self.output_path = DropLineEdit(self, "output")
-        self.output_path.setPlaceholderText("输出文件夹路径")
-        output_button = QtWidgets.QPushButton("设置输出")
-        output_button.clicked.connect(self.select_output)
-        output_layout.addWidget(self.output_path)
-        output_layout.addWidget(output_button)
-        main_layout.addLayout(output_layout)
-        
-        self.start_button = QtWidgets.QPushButton("开始转换")
-        self.start_button.clicked.connect(self.start_conversion)
-        main_layout.addWidget(self.start_button)
-        
-        checkbox_layout = setup_checkboxes(self)
-        main_layout.addLayout(checkbox_layout)
-
-        lock_cs_num_layout = setup_combobox(self)
-        main_layout.addLayout(lock_cs_num_layout)
-
-        tabs = setup_tabs(self)
-        main_layout.addWidget(tabs)
-
-        # 应用外发光效果
-        apply_glow_effect(self.start_button)
-        apply_glow_effect(input_button)
-        apply_glow_effect(output_button)
-
-        self.setLayout(main_layout)
+        central_widget = QtWidgets.QWidget()
+        self.setCentralWidget(central_widget)  # 使用 QMainWindow 的 setCentralWidget 方法
+        setup_main_layout(central_widget, self)  # 传递 central_widget 和 MainWindow 实例
 
         self.auto_create_output_folder.stateChanged.connect(self.handle_auto_create_output_folder)
+
+        # 添加状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+    def show_notification(self, message):
+        self.status_bar.showMessage(message, 3000)  # 显示消息3秒
+
+    def update_language(self):
+        # 更新界面语言的逻辑
+        self.setWindowTitle(self.translations.get('window_title', 'LAs EZ2OSU'))
+        self.start_button.setText(self.translations.get('start_conversion', '开始转换'))
+        self.input_path.setPlaceholderText(self.translations.get('input_folder_path', '输入文件夹路径'))
+        self.output_path.setPlaceholderText(self.translations.get('output_folder_path', '输出文件夹路径'))
+        # 更新其他需要翻译的控件文本
 
     def move_to_cursor(self):
         cursor_pos = QCursor.pos()
@@ -96,14 +70,18 @@ class MainWindow(QtWidgets.QWidget):
 
     def handle_auto_create_output_folder(self, state):
         if state == QtCore.Qt.Checked:
-            osu_install_path = self.settings.value("osu_install_path", None)
-            if not osu_install_path:
-                osu_install_path = QFileDialog.getExistingDirectory(self, "选择 osu! 安装路径")
-                if osu_install_path:
-                    self.settings.setValue("osu_install_path", osu_install_path)
+            osu_songs_path = self.settings.value("osu_songs_path", None)
+            if not osu_songs_path:
+                osu_songs_path = get_osu_songs_path(self)
+                if osu_songs_path:
+                    self.settings.setValue("osu_songs_path", osu_songs_path)
                 else:
                     QMessageBox.warning(self, "错误", "未选择 osu! 安装路径，请手动设置输出文件夹。")
                     self.auto_create_output_folder.setChecked(False)
+
+    def process_folder(self, folder_path, output_path, settings):
+        for bmson_file in folder_path.glob("**/*.bmson"):
+            process_file(bmson_file, output_path, settings)
 
     def start_conversion(self):
         input_path = pathlib.Path(self.input_path.text())
@@ -119,20 +97,33 @@ class MainWindow(QtWidgets.QWidget):
             convert_sv=self.convert_sv.isChecked(),
             convert_sample_bg=self.convert_sample_bg.isChecked(),
             auto_create_output_folder=self.auto_create_output_folder.isChecked(),
+            source=self.config.source,
         )
         # 自动创建输出文件夹
         if self.auto_create_output_folder.isChecked():
-            osu_install_path = pathlib.Path(self.settings.value("osu_install_path"))
-            osu_songs_path = osu_install_path / "Songs"
-            config_source_folder = osu_songs_path / config.source
-            config_source_folder.mkdir(parents=True, exist_ok=True)
-            output_path = config_source_folder
+            osu_songs_path = pathlib.Path(self.settings.value("osu_songs_path"))
+            set_output_folder = osu_songs_path / settings.source
+            set_output_folder.mkdir(parents=True, exist_ok=True)
+            output_path = set_output_folder
             self.output_path.setText(str(output_path))
+        else:
+            # 使用用户选择的输出路径
+            set_output_folder = output_path / settings.source
+            set_output_folder.mkdir(parents=True, exist_ok=True)
 
-        for bmson_file in input_path.glob("**/*.bmson"):
-            # 处理文件并保存到对应的子目录
-            self.names_obj = process_file(bmson_file, output_path, settings)
-
+        # 使用多线程处理文件夹
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for folder in input_path.iterdir():
+                if folder.is_dir():
+                    futures.append(executor.submit(self.process_folder, folder, output_path, settings))
+            
+            # 等待所有线程完成
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Error processing folder: {e}")
         # 更新文件树
         self.home_tab.input_tree.populate_tree(input_path)
         self.home_tab.output_tree.populate_tree(output_path)
@@ -152,6 +143,8 @@ class MainWindow(QtWidgets.QWidget):
         self.settings.setValue("convert_sv", self.convert_sv.isChecked())
         self.settings.setValue("convert_sample_bg", self.convert_sample_bg.isChecked())
         self.settings.setValue("auto_create_output_folder", self.auto_create_output_folder.isChecked())
+        self.settings.setValue("source", self.config.source)
+        self.show_notification("Settings saved successfully!")
 
     def load_settings(self):
         self.input_path.setText(self.settings.value("input_path", ""))
@@ -164,6 +157,7 @@ class MainWindow(QtWidgets.QWidget):
         self.convert_sv.setChecked(self.settings.value("convert_sv", True, type=bool))
         self.convert_sample_bg.setChecked(self.settings.value("convert_sample_bg", True, type=bool))
         self.auto_create_output_folder.setChecked(self.settings.value("auto_create_output_folder", False, type=bool))
+        self.config.source = self.settings.value("source", "")
 
         # 加载文件树
         input_path = pathlib.Path(self.input_path.text())
