@@ -3,11 +3,11 @@ import pathlib
 from PyQt5 import QtGui, QtWidgets, QtCore
 
 def set_window_icon(window):
-    icon_path = pathlib.Path(__file__).parent.parent / 'ico' / 'icon.png'
+    icon_path = pathlib.Path(__file__).parent.parent / 'BGi' / 'icon.png'
     window.setWindowIcon(QtGui.QIcon(str(icon_path)))
 
 def set_background_image(window):
-    bg_path = pathlib.Path(__file__).parent.parent / 'ico' / 'bg.png'
+    bg_path = pathlib.Path(__file__).parent.parent / 'BGi' / 'bg.png'
     if not bg_path.exists():
         print(f"Background image not found at: {bg_path}")
         return

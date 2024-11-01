@@ -1,53 +1,61 @@
 #Dispatch_data.py
 from config import get_config
-from get_info import get_info, get_names
+from get_info import get_info
 from conv_bmson import bms
-from events import get_events
+from SV import get_SV
+from Samples import get_samples
 from osu import generate_osu_file
 import json
 import os
 import logging
 import json
 import pathlib
-
-
+from mod.clm_no_empty import remove_empty_columns
+from mod.lock_cs import lock_cs
 
 
 def dispatch(data, settings):
-    print("dispatch调度处理开始")
     config = get_config()
-    info_obj = get_info(data, config)
-    names_obj = get_names(info_obj, config)
-    notes_obj, main_audio, offset, SongLg, new_CS = bms(data, info_obj, names_obj, settings)
-    events, Samples = get_events(data, info_obj, offset)
-    osu_content = generate_osu_file(config, info_obj, events, Samples, SongLg, notes_obj, new_CS)
+    info = get_info(data, config) 
+    notes_obj, main_audio, offset, SongLg, CS = bms(data, info)
+    if settings.remove_empty_columns:
+        notes_obj, new_CS = remove_empty_columns(notes_obj, CS)
+    #print("bms 函数返回的 notes_obj 内容:", notes_obj)
+    #print("c e c 返回的 notes_obj 类型:", type(notes_obj))
+    if settings.lock_cs_set:
+        notes_obj = lock_cs(notes_obj, CS, int(settings.lock_cs_num))
 
-    print("调度处理完成")
+    SV = get_SV(data, offset, info, settings) if settings.convert_sv else ''
+    Samples = get_samples(data, info, offset, settings) if settings.convert_sample_bg else ''
+
+    osu_content = generate_osu_file(config, info, SV, offset, Samples, SongLg, notes_obj, new_CS)
+
+
 
     # Output all query values
     # print('\n'"[Object]")
-    # print(f"Title: {info_obj.title}")
-    # print(f"Artist: {info_obj.artist}")
-    # print(f"BPM: {info_obj.bpm}")
-    # print(f"Image: {info_obj.image}")
-    # print(f"Resolution: {info_obj.resolution}")
-    # print(f"LN Type: {info_obj.ln_type}")
-    print(f"Level: {info_obj.lv}")
-    print(f"Tags: {info_obj.tags}")
-    # print(f"Version: {info_obj.ver}")
-    # print(f"Difficulty: {info_obj.diff}")
-    print(f"Song: {info_obj.song}")
-    print(f"Img: {names_obj.img_filename}")
+    # print(f"Title: {info.title}")
+    # print(f"Artist: {info.artist}")
+    # print(f"BPM: {info.bpm}")
+    # print(f"Image: {info.image}")
+    # print(f"Resolution: {info.resolution}")
+    # print(f"LN Type: {info.ln_type}")
+    #print(f"Level: {info.lv}")
+    #print(f"Tags: {info.tags}")
+    # print(f"Version: {info.ver}")
+    # print(f"Difficulty: {info.diff}")
+    print(f"Song: {info.song}")
+    print(f"Img: {info.img_filename}")
 
-    # print(f"CS: {info_obj.CS}")
-    # print(f"Mode Hint: {info_obj.EZmode}")
+    # print(f"CS: {info.CS}")
+    # print(f"Mode Hint: {info.EZmode}")
 
-    #print(f"TP0: {info_obj.TP0}")
-    #print(f"PT: {info_obj.PT}")
+    #print(f"TP0: {info.TP0}")
+    #print(f"PT: {info.PT}")
 
-    print(f"New Folder Name: {names_obj.new_folder}")
-    print(f"Sub Folder Name: {names_obj.sub_folder}")
-    print(f"Osu Filename: {names_obj.osu_filename}")
+    print(f"New Folder Name: {info.new_folder}")
+    print(f"Sub Folder Name: {info.sub_folder}")
+    print(f"Osu Filename: {info.osu_filename}")
 
 
     #print(f"Main Audio: {main_audio}")
@@ -57,7 +65,7 @@ def dispatch(data, settings):
 
     print("\n调度转换完成")
 
-    return osu_content, info_obj, names_obj, main_audio
+    return osu_content, info, main_audio
 
 
 def scan_folder(folder_path):

@@ -49,6 +49,6 @@ def remove_empty_columns(notes_obj, CS):
             parts[0] = str(new_note_x)
             new_notes_obj.append(','.join(parts))
 
-    print("去空列-前后列号映射:", column_mapping)
+    #print("去空列-前后列号映射:", column_mapping)
 
     return new_notes_obj, new_CS

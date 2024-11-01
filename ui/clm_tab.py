@@ -1,6 +1,6 @@
 #clm_tab.py
 from PyQt5 import QtWidgets, QtGui, QtCore
-import ui.ui_styling  # 导入美化脚本
+import ui.styling  # 导入美化脚本
 
 class ClmTab(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -88,14 +88,14 @@ class DraggableLineEdit(QtWidgets.QWidget):
         self.line_edit = QtWidgets.QLineEdit(text)
         self.line_edit.setReadOnly(True)
         self.line_edit.setAlignment(QtCore.Qt.AlignCenter)  # 数字居中显示
-        self.line_edit.setStyleSheet(ui.ui_styling.line_edit_style)  # 应用样式
+        self.line_edit.setStyleSheet(ui.styling.line_edit_style)  # 应用样式
         self.line_edit.mouseDoubleClickEvent = self.enable_editing
         self.line_edit.focusOutEvent = self.disable_editing
 
         self.drag_area = QtWidgets.QFrame()
         self.drag_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.drag_area.setFixedHeight(20)
-        self.drag_area.setStyleSheet(ui.ui_styling.drag_area_style)  # 应用样式
+        self.drag_area.setStyleSheet(ui.styling.drag_area_style)  # 应用样式
         self.drag_area.mousePressEvent = self.mousePressEvent
         self.drag_area.mouseMoveEvent = self.mouseMoveEvent
 

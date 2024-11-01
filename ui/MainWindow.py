@@ -1,21 +1,21 @@
-#MainWindow.py
+# MainWindow.py
 import pathlib
 from PyQt5 import QtWidgets, QtGui, QtCore
 from Dispatch_file import process_file
-from ui.ui_styling import set_window_icon, set_background_image
-from ui.home_tab import HomeTab
-from ui.clm_tab import ClmTab
-
-# 未来可以导入其他标签页
-# from ui.other_tab import OtherTab
-
+from ui.styling import set_window_icon, set_background_image
+from ui.elements import setup_combobox, setup_checkboxes, setup_tabs
+from ui.osu_path import get_osu_install_path
+from config import config
 class ConversionSettings:
-    def __init__(self, include_audio, include_images, remove_empty_columns, lock_cs_set, cs_number):
+    def __init__(self, include_audio, include_images, remove_empty_columns, lock_cs_set, lock_cs_num, convert_sv, convert_sample_bg, auto_create_output_folder):
         self.include_audio = include_audio
         self.include_images = include_images
         self.remove_empty_columns = remove_empty_columns
         self.lock_cs_set = lock_cs_set
-        self.cs_number = cs_number
+        self.lock_cs_num = lock_cs_num
+        self.convert_sv = convert_sv
+        self.convert_sample_bg = convert_sample_bg
+        self.auto_create_output_folder = auto_create_output_folder
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
@@ -29,13 +29,11 @@ class MainWindow(QtWidgets.QWidget):
         self.setWindowTitle('LAs EZ2OSU')
         self.setGeometry(100, 100, 800, 600)
         
-        # 设置窗口图标和背景图片
         set_window_icon(self)
         set_background_image(self)
 
         main_layout = QtWidgets.QVBoxLayout(self)
 
-        # 输入文件夹路径
         input_layout = QtWidgets.QHBoxLayout()
         self.input_path = DropLineEdit(self, "input")
         self.input_path.setPlaceholderText("输入文件夹路径")
@@ -45,7 +43,6 @@ class MainWindow(QtWidgets.QWidget):
         input_layout.addWidget(input_button)
         main_layout.addLayout(input_layout)
         
-        # 输出文件夹路径
         output_layout = QtWidgets.QHBoxLayout()
         self.output_path = DropLineEdit(self, "output")
         self.output_path.setPlaceholderText("输出文件夹路径")
@@ -55,57 +52,23 @@ class MainWindow(QtWidgets.QWidget):
         output_layout.addWidget(output_button)
         main_layout.addLayout(output_layout)
         
-        # 开始转换按钮
         self.start_button = QtWidgets.QPushButton("开始转换")
         self.start_button.clicked.connect(self.start_conversion)
         main_layout.addWidget(self.start_button)
         
-        # 复选框
-        checkbox_layout = QtWidgets.QHBoxLayout()
-        self.include_audio = QtWidgets.QCheckBox("包含音频文件")
-        self.include_audio.setChecked(True)  # 默认勾选
-        self.include_images = QtWidgets.QCheckBox("包含图片文件")
-        self.include_images.setChecked(True)  # 默认勾选
-        self.remove_empty_columns = QtWidgets.QCheckBox("去除原谱空列")
-        self.remove_empty_columns.setChecked(True)  # 默认勾选
-        self.lock_cs_set = QtWidgets.QCheckBox("去除空列时锁定CS数")
-        self.lock_cs_set.setChecked(True)  # 默认勾选
-        checkbox_layout.addWidget(self.include_audio)
-        checkbox_layout.addWidget(self.include_images)  
-        checkbox_layout.addWidget(self.remove_empty_columns)
-        checkbox_layout.addWidget(self.lock_cs_set)
+        checkbox_layout = setup_checkboxes(self)
         main_layout.addLayout(checkbox_layout)
 
-        # 添加下拉栏
-        cs_number_layout = QtWidgets.QHBoxLayout()
-        cs_number_layout.addStretch()  # 添加弹性空间以确保右对齐
-        self.cs_number_label = QtWidgets.QLabel("选择锁定的CS数:")
-        self.cs_number_label.setStyleSheet("color: black;")
-        self.cs_number_combobox = QtWidgets.QComboBox()
-        self.cs_number_combobox.addItems(["14", "16", "10", "8"])  # 添加可选的CS数
-        # 锁定下拉栏宽度
-        self.cs_number_combobox.setFixedWidth(50)  # 你可以根据需要调整宽度值
-        cs_number_layout.addWidget(self.cs_number_label)
-        cs_number_layout.addWidget(self.cs_number_combobox)
-        main_layout.addLayout(cs_number_layout)
+        lock_cs_num_layout = setup_combobox(self)
+        main_layout.addLayout(lock_cs_num_layout)
 
-        # 标签页
-        self.tabs = QtWidgets.QTabWidget()
-        self.home_tab = HomeTab(self)
-        self.tabs.addTab(self.home_tab, "Home")
-        self.clm_tab = ClmTab(self)
-        self.tabs.addTab(self.clm_tab, "Clm")
+        tabs = setup_tabs(self)
+        main_layout.addWidget(tabs)
 
-        # 未来可以在这里添加其他标签页
-        # self.other_tab = OtherTab(self)
-        # self.tabs.addTab(self.other_tab, "Other")
-        
         # 应用外发光效果
         apply_glow_effect(self.start_button)
         apply_glow_effect(input_button)
         apply_glow_effect(output_button)
-
-        main_layout.addWidget(self.tabs)
 
         self.setLayout(main_layout)
 
@@ -131,17 +94,27 @@ class MainWindow(QtWidgets.QWidget):
             include_images=self.include_images.isChecked(),
             remove_empty_columns=self.remove_empty_columns.isChecked(),
             lock_cs_set=self.lock_cs_set.isChecked(),
-            cs_number=self.cs_number_combobox.currentText()
+            lock_cs_num=self.lock_cs_num_combobox.currentText(),
+            convert_sv=self.convert_sv.isChecked(),
+            convert_sample_bg=self.convert_sample_bg.isChecked(),
+            auto_create_output_folder=self.auto_create_output_folder.isChecked(),
         )
-        
+        # 自动创建输出文件夹
+        if self.auto_create_output_folder.isChecked():
+            osu_install_path = get_osu_install_path()
+            if osu_install_path:
+                osu_songs_path = osu_install_path / "Songs"
+                config_source_folder = osu_songs_path / config.source
+                config_source_folder.mkdir(parents=True, exist_ok=True)
+                output_path = config_source_folder
+                self.output_path.setText(str(output_path))
+            else:
+                QtWidgets.QMessageBox.warning(self, "错误", "无法找到 osu! 安装路径，请手动设置输出文件夹。")
+
+
         for bmson_file in input_path.glob("**/*.bmson"):
-            # 在输出路径中创建对应的子目录
-            relative_path = bmson_file.relative_to(input_path)
-            target_dir = output_path / relative_path.parent
-            target_dir.mkdir(parents=True, exist_ok=True)
-            
             # 处理文件并保存到对应的子目录
-            self.names_obj = process_file(bmson_file, target_dir, settings)
+            self.names_obj = process_file(bmson_file, output_path, settings)
 
         # 更新文件树
         self.home_tab.input_tree.populate_tree(input_path)
@@ -158,7 +131,10 @@ class MainWindow(QtWidgets.QWidget):
         self.settings.setValue("include_images", self.include_images.isChecked())
         self.settings.setValue("remove_empty_columns", self.remove_empty_columns.isChecked())
         self.settings.setValue("lock_cs_set", self.lock_cs_set.isChecked())
-        self.settings.setValue("cs_number", self.cs_number_combobox.currentText())
+        self.settings.setValue("lock_cs_num", self.lock_cs_num_combobox.currentText())
+        self.settings.setValue("convert_sv", self.convert_sv.isChecked())
+        self.settings.setValue("convert_sample_bg", self.convert_sample_bg.isChecked())
+        self.settings.setValue("auto_create_output_folder", self.auto_create_output_folder.isChecked())
 
     def load_settings(self):
         self.input_path.setText(self.settings.value("input_path", ""))
@@ -167,7 +143,10 @@ class MainWindow(QtWidgets.QWidget):
         self.include_images.setChecked(self.settings.value("include_images", True, type=bool))
         self.remove_empty_columns.setChecked(self.settings.value("remove_empty_columns", True, type=bool))
         self.lock_cs_set.setChecked(self.settings.value("lock_cs_set", True, type=bool))
-        self.cs_number_combobox.setCurrentText(self.settings.value("cs_number", "14"))
+        self.lock_cs_num_combobox.setCurrentText(self.settings.value("lock_cs_num", "14"))
+        self.convert_sv.setChecked(self.settings.value("convert_sv", True, type=bool))
+        self.convert_sample_bg.setChecked(self.settings.value("convert_sample_bg", True, type=bool))
+        self.auto_create_output_folder.setChecked(self.settings.value("auto_create_output_folder", False, type=bool))
 
         # 加载文件树
         input_path = pathlib.Path(self.input_path.text())
@@ -197,7 +176,6 @@ class DropLineEdit(QtWidgets.QLineEdit):
                     self.parent().home_tab.input_tree.populate_tree(pathlib.Path(path))
                 elif self.path_type == "output":
                     self.parent().home_tab.output_tree.populate_tree(pathlib.Path(path))
-
 
 def apply_glow_effect(widget):
     glow_effect = QtWidgets.QGraphicsDropShadowEffect()
