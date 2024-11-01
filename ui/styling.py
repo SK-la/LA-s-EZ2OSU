@@ -123,3 +123,31 @@ drag_area_style = """
         background-color: lightgray;
     }
 """
+
+class DropLineEdit(QtWidgets.QLineEdit):
+    def __init__(self, parent=None, path_type="input"):
+        super().__init__(parent)
+        self.path_type = path_type
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if urls:
+            path = urls[0].toLocalFile()
+            if pathlib.Path(path).is_dir():
+                self.setText(path)
+                if self.path_type == "input":
+                    self.parent().home_tab.input_tree.populate_tree(pathlib.Path(path))
+                elif self.path_type == "output":
+                    self.parent().home_tab.output_tree.populate_tree(pathlib.Path(path))
+
+def apply_glow_effect(widget):
+    glow_effect = QtWidgets.QGraphicsDropShadowEffect()
+    glow_effect.setBlurRadius(5)
+    glow_effect.setColor(QtGui.QColor(3, 3, 3, 100))
+    glow_effect.setOffset(0, 0)
+    widget.setGraphicsEffect(glow_effect)

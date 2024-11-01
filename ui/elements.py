@@ -5,7 +5,7 @@ from ui.clm_tab import ClmTab
 
 def setup_combobox(main_window):
     lock_cs_num_layout = QtWidgets.QHBoxLayout()
-    main_window.auto_create_output_folder = QtWidgets.QCheckBox("自动创建输出文件夹")
+    main_window.auto_create_output_folder = QtWidgets.QCheckBox("自动创建主文件夹")
     main_window.auto_create_output_folder.setChecked(False)
     lock_cs_num_layout.addWidget(main_window.auto_create_output_folder)
     lock_cs_num_layout.addStretch()

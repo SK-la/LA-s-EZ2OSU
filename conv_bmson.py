@@ -1,55 +1,28 @@
 # converter_bmson.py
 
-def bms(data, info_obj):
-    CS = info_obj.CS
+def bms(data, info, offset):
+    CS = info.CS
     def cal_notex(CS, x):
         note_x = int(( x - 1 ) * 512 / CS) + int(256/CS)
         return note_x
 
-    MpB = info_obj.MpB
-    resolution = int(info_obj.resolution*4)
     def calculate_pulse_time(y):
-        return round(y * MpB )
+        return round(y * info.MpB )
     
     # 初始化变量
-    note_x = 8
     hitSound = 0
-    SongLg = 0
-    notes_obj = []
-
     normalSet = 0
     additionSet = 0
     ksindex = 0
     volume = 100
-
+    note_x = 8
     note_time = None
-    main_audio = None  
-    y_start = 0
-    y_end = 0
-
-    zero_x_notes = []
-    for channel in data['sound_channels']:
-        notes = channel['notes']
-        for note in notes:
-            if note['x'] == 0:
-                zero_x_notes.append(note)
-                if len(zero_x_notes) == 1:
-                    main_audio = channel['name']
-                    y_start = note['y']
-                elif len(zero_x_notes) == 2:
-                    y_end = note['y']
-                    break
-        if len(zero_x_notes) == 2:
-            break
-    zero_x_notes = zero_x_notes[:2]
-
-    SongLg = round((y_end - y_start) * MpB)
-    offset = round((y_start * MpB / resolution) - 2) * resolution
-
+    notes_obj = []
     valid_notes = []
+
     for channel in data['sound_channels']:
         notes = channel['notes']
-        ksfilename = channel['name'].replace("sound\\", f"{info_obj.sub_folder}/")
+        ksfilename = channel['name'].replace("sound\\", f"{info.sub_folder}/")
         hitSample = f"{normalSet}:{additionSet}:{ksindex}:{volume}:{ksfilename}"
         
         for note in notes:
@@ -92,8 +65,7 @@ def bms(data, info_obj):
     #     note_parts = note.split(',')
     #     note_time = float(note_parts[2])
 
-    print(f"\n脉冲: Start: {y_start}, End: {y_end}, Song Length: {SongLg}, Offset: {offset}")
     print(f"转换Notes总数: {len(notes_obj)}\n")
 
-    return notes_obj, main_audio, offset, SongLg, CS
+    return notes_obj, CS
 

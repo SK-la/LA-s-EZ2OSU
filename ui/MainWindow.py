@@ -1,11 +1,14 @@
 # MainWindow.py
 import pathlib
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtGui import QCursor
 from Dispatch_file import process_file
-from ui.styling import set_window_icon, set_background_image
+from ui.styling import set_window_icon, set_background_image, DropLineEdit, apply_glow_effect
 from ui.elements import setup_combobox, setup_checkboxes, setup_tabs
 from ui.osu_path import get_osu_install_path
 from config import config
+
 class ConversionSettings:
     def __init__(self, include_audio, include_images, remove_empty_columns, lock_cs_set, lock_cs_num, convert_sv, convert_sample_bg, auto_create_output_folder):
         self.include_audio = include_audio
@@ -21,9 +24,10 @@ class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setAcceptDrops(True)
-        self.settings = QtCore.QSettings("MyCompany", "MyApp")  # 使用 QSettings
+        self.settings = QtCore.QSettings("LAZ", "EZ2OSU")  # 使用 QSettings
         self.initUI()
         self.load_settings()  # 加载设置
+        self.move_to_cursor()
 
     def initUI(self):
         self.setWindowTitle('LAs EZ2OSU')
@@ -72,6 +76,12 @@ class MainWindow(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+        self.auto_create_output_folder.stateChanged.connect(self.handle_auto_create_output_folder)
+
+    def move_to_cursor(self):
+        cursor_pos = QCursor.pos()
+        self.move(cursor_pos.x(), cursor_pos.y())
+
     def select_input(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self, "选择输入文件夹")
         if path:
@@ -83,6 +93,17 @@ class MainWindow(QtWidgets.QWidget):
         if path:
             self.output_path.setText(path)
             self.home_tab.output_tree.populate_tree(pathlib.Path(path))
+
+    def handle_auto_create_output_folder(self, state):
+        if state == QtCore.Qt.Checked:
+            osu_install_path = self.settings.value("osu_install_path", None)
+            if not osu_install_path:
+                osu_install_path = QFileDialog.getExistingDirectory(self, "选择 osu! 安装路径")
+                if osu_install_path:
+                    self.settings.setValue("osu_install_path", osu_install_path)
+                else:
+                    QMessageBox.warning(self, "错误", "未选择 osu! 安装路径，请手动设置输出文件夹。")
+                    self.auto_create_output_folder.setChecked(False)
 
     def start_conversion(self):
         input_path = pathlib.Path(self.input_path.text())
@@ -101,16 +122,12 @@ class MainWindow(QtWidgets.QWidget):
         )
         # 自动创建输出文件夹
         if self.auto_create_output_folder.isChecked():
-            osu_install_path = get_osu_install_path()
-            if osu_install_path:
-                osu_songs_path = osu_install_path / "Songs"
-                config_source_folder = osu_songs_path / config.source
-                config_source_folder.mkdir(parents=True, exist_ok=True)
-                output_path = config_source_folder
-                self.output_path.setText(str(output_path))
-            else:
-                QtWidgets.QMessageBox.warning(self, "错误", "无法找到 osu! 安装路径，请手动设置输出文件夹。")
-
+            osu_install_path = pathlib.Path(self.settings.value("osu_install_path"))
+            osu_songs_path = osu_install_path / "Songs"
+            config_source_folder = osu_songs_path / config.source
+            config_source_folder.mkdir(parents=True, exist_ok=True)
+            output_path = config_source_folder
+            self.output_path.setText(str(output_path))
 
         for bmson_file in input_path.glob("**/*.bmson"):
             # 处理文件并保存到对应的子目录
@@ -156,30 +173,4 @@ class MainWindow(QtWidgets.QWidget):
         if output_path.exists():
             self.home_tab.output_tree.populate_tree(output_path)
 
-class DropLineEdit(QtWidgets.QLineEdit):
-    def __init__(self, parent=None, path_type="input"):
-        super().__init__(parent)
-        self.path_type = path_type
-        self.setAcceptDrops(True)
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        urls = event.mimeData().urls()
-        if urls:
-            path = urls[0].toLocalFile()
-            if pathlib.Path(path).is_dir():
-                self.setText(path)
-                if self.path_type == "input":
-                    self.parent().home_tab.input_tree.populate_tree(pathlib.Path(path))
-                elif self.path_type == "output":
-                    self.parent().home_tab.output_tree.populate_tree(pathlib.Path(path))
-
-def apply_glow_effect(widget):
-    glow_effect = QtWidgets.QGraphicsDropShadowEffect()
-    glow_effect.setBlurRadius(5)
-    glow_effect.setColor(QtGui.QColor(3, 3, 3, 100))
-    glow_effect.setOffset(0, 0)
-    widget.setGraphicsEffect(glow_effect)
