@@ -18,16 +18,16 @@ def dispatch(data, settings):
     config = get_config()
     info = get_info(data, config) 
     notes_obj, main_audio, offset, SongLg, CS = bms(data, info)
-    if settings.remove_empty_columns:
-        notes_obj, new_CS = remove_empty_columns(notes_obj, CS)
     #print("bms 函数返回的 notes_obj 内容:", notes_obj)
-    #print("c e c 返回的 notes_obj 类型:", type(notes_obj))
+    #mod
     if settings.lock_cs_set:
         notes_obj = lock_cs(notes_obj, CS, int(settings.lock_cs_num))
-
+    if settings.remove_empty_columns:
+        notes_obj, new_CS = remove_empty_columns(notes_obj, CS)
+    else: new_CS = CS
     SV = get_SV(data, offset, info, settings) if settings.convert_sv else ''
     Samples = get_samples(data, info, offset, settings) if settings.convert_sample_bg else ''
-
+    #print("c e c 返回的 notes_obj 类型:", type(notes_obj))
     osu_content = generate_osu_file(config, info, SV, offset, Samples, SongLg, notes_obj, new_CS)
 
 
@@ -44,8 +44,8 @@ def dispatch(data, settings):
     #print(f"Tags: {info.tags}")
     # print(f"Version: {info.ver}")
     # print(f"Difficulty: {info.diff}")
-    print(f"Song: {info.song}")
-    print(f"Img: {info.img_filename}")
+    #print(f"Song: {info.song}")
+    
 
     # print(f"CS: {info.CS}")
     # print(f"Mode Hint: {info.EZmode}")
@@ -56,6 +56,7 @@ def dispatch(data, settings):
     print(f"New Folder Name: {info.new_folder}")
     print(f"Sub Folder Name: {info.sub_folder}")
     print(f"Osu Filename: {info.osu_filename}")
+    print(f"Img: {info.img_filename}")
 
 
     #print(f"Main Audio: {main_audio}")
