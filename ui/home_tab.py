@@ -1,13 +1,12 @@
-import pathlib
-import asyncio
+import pathlib, asyncio
 from PyQt5 import QtWidgets
 from bin.Dispatch_file import process_file
+import urllib.parse
 
 class HomeTab(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.cache_lock = asyncio.Lock()  # 使用 asyncio 锁
         # 文件夹结构树
         self.input_tree = FileTreeWidget(self, "input", parent)
         self.input_tree.setHeaderLabel("输入文件夹结构")
@@ -47,11 +46,13 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
     def add_tree_items(self, parent_item, folder_path):
         items = sorted(folder_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
         for item in items:
+            # 处理特殊字符
+            item_name = urllib.parse.unquote(item.name)
             if item.is_dir():
-                dir_item = QtWidgets.QTreeWidgetItem(parent_item, [item.name])
+                dir_item = QtWidgets.QTreeWidgetItem(parent_item, [item_name])
                 self.add_tree_items(dir_item, item)
             else:
-                QtWidgets.QTreeWidgetItem(parent_item, [item.name])
+                QtWidgets.QTreeWidgetItem(parent_item, [item_name])
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -85,11 +86,10 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
         file_path = pathlib.Path(item.text(0))
         if file_path.exists() and file_path.is_file():
             output_path = pathlib.Path(self.main_window.output_path.text())
-            cache = self.main_window.cache  # 获取缓存
-            cache_lock = self.main_window.cache_lock  # 获取缓存锁
             await process_file(
-                file_path, output_path, self.main_window.settings, cache, cache_lock
+                file_path, output_path, self.main_window.settings, []
             )
+            self.main_window.show_notification(f"文件 {file_path} 转换完成")
 
     def delete_file(self, item):
         file_path = pathlib.Path(item.text(0))

@@ -1,6 +1,4 @@
-#bin/Dispatch_data.py
 import os
-import json
 from bin.config import get_config
 from bin.get_info import get_info
 from bin.conv_bmson import bms
@@ -28,12 +26,11 @@ def dispatch(data, settings):
     sv = get_sv(data, offset, info, settings) if settings.convert_sv else ''
     osu_content = generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs)
 
-    print(f"New Folder Name: {info.new_folder}")
-    print(f"Sub Folder Name: {info.sub_folder}")
+    logger.info(f"New Folder Name: {info.new_folder}")
+    logger.info(f"Sub Folder Name: {info.sub_folder}")
+    logger.info(f"Osu Filename: {info.osu_filename}")
+    logger.info(f"Img Filename: {info.img_filename}")
     print(f"Osu Filename: {info.osu_filename}")
-    print(f"Img Filename: {info.img_filename}")
-    print("调度转换完成")
-
     return osu_content, info, main_audio
 
 def scan_folder(folder_path):
@@ -48,5 +45,3 @@ def scan_folder(folder_path):
                 files.append(file_path)
     return files
 
-def print_collapsed(content, indent=2):
-    print(json.dumps(content, indent=indent))

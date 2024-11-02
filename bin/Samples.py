@@ -1,28 +1,27 @@
 #Samples.py
+from bin.custom_log import setup_custom_logger
+
+logger = setup_custom_logger(__name__)
 
 def get_samples(data, info, settings):
     def calculate_pulse_time(y):
         return round(y * info.MpB )
 
-    main_audio = None  
-    y_start = 0
-    y_end = 0
+    main_audio = None
     samples = []
-    zero_x_notes = []
+    all_notes = []
 
     for channel in data['sound_channels']:
         for note in channel['notes']:
-            if note['x'] == 0:
-                zero_x_notes.append(note)
-                if len(zero_x_notes) == 1:
-                    main_audio = channel['name']
-                    y_start = note['y']
-                elif len(zero_x_notes) == 2:
-                    y_end = note['y']
-                    break
-        if len(zero_x_notes) == 2:
-            break
-    zero_x_notes = zero_x_notes[:2]
+            all_notes.append(note)
+            if note['x'] == 0 and main_audio is None:
+                main_audio = channel['name']
+
+    # 按 y 值排序
+    all_notes.sort(key=lambda note: note['y'])
+
+    y_start = all_notes[0]['y'] if all_notes else 0
+    y_end = all_notes[-1]['y'] if all_notes else 0
 
     song_lg = round((y_end - y_start) * info.MpB)
 
@@ -30,7 +29,7 @@ def get_samples(data, info, settings):
     for channel in data['sound_channels']:
         hs = channel['name'].replace("sound\\", f"{info.sub_folder}/")
         for note in channel['notes']:
-            if note['x'] == 0 and note not in zero_x_notes:
+            if 1 <= note['x'] <= 16:
                 valid_notes.append((note['y'], hs))
 
     # 按 y 值排序
@@ -45,7 +44,8 @@ def get_samples(data, info, settings):
         for y, hs in valid_notes:
             note_time = calculate_pulse_time(y) + offset
             samples.append(f"5,{note_time},0,\"{hs}\"")
-            
-    print(f"\n脉冲: Start: {y_start}, End: {y_end}, Song Length: {song_lg}, Offset: {offset}")
+
+    print(f"脉冲: Start: {y_start}, End: {y_end}, Song Length: {song_lg}, Offset: {offset}")
+    logger.info(f"脉冲: Start: {y_start}, End: {y_end}, Song Length: {song_lg}, Offset: {offset}")
     return samples,  main_audio, offset, song_lg
 

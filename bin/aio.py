@@ -1,65 +1,44 @@
-#bin/aio.py
-import asyncio
-import pathlib
-import json
-import os
-import aiofiles
-import shutil
-import datetime
+import asyncio, aiofiles
+import datetime, pathlib
 from bin.Dispatch_file import process_file
 from bin.custom_log import setup_custom_logger
+from bin.io_utils import find_duplicate_files
 
 logger = setup_custom_logger(__name__)
 cache_lock = asyncio.Lock()
-semaphore = asyncio.Semaphore(10)  # 限制并发任务数量
+semaphore = asyncio.Semaphore(4000)  # 限制并发任务数量
 
-async def load_cache(cache_file_path):
-    if os.path.exists(cache_file_path):
-        async with aiofiles.open(cache_file_path, 'r', encoding='utf-8') as file:
-            return json.loads(await file.read())
-    return {}
-
-async def save_cache(cache_file_path, cache_data):
-    async with aiofiles.open(cache_file_path, 'w', encoding='utf-8') as file:
-        await file.write(json.dumps(cache_data))
-
-async def copy_file_with_cache(file_path, destination_path, cache):
-    async with cache_lock:
-        if str(file_path) in cache:
-            return  # 跳过已处理的文件
-        cache[str(file_path)] = True  # 更新缓存
-    shutil.copy(file_path, destination_path)
-
-async def process_sound_folder(sound_folder, output_folder, cache):
-    for sound_file in sound_folder.glob("*.*"):
-        destination_path = output_folder / sound_file.name
-        await copy_file_with_cache(sound_file, destination_path, cache)
-
-async def process_folder(folder_path, output_folder_path, settings, cache, error_list):
+async def process_folder(folder_path, output_folder_path, settings, error_list):
     try:
-        sound_folder = folder_path / "sound"
-        if sound_folder.exists():
-            await process_sound_folder(sound_folder, output_folder_path, cache)
-
         for bmson_file in folder_path.glob("*.bmson"):
             async with semaphore:
-                await process_file(bmson_file, output_folder_path, settings, cache, error_list)
+                try:
+                    await process_file(bmson_file, output_folder_path, settings, error_list)
+                except Exception as e:
+                    error_list.append((bmson_file, str(e)))
+                    logger.error(f"Error processing file {bmson_file}: {e}")
     except Exception as e:
         error_list.append((folder_path, str(e)))
+        logger.error(f"Error processing folder {folder_path}: {e}")
 
-async def start_conversion(input_folder_path, output_folder_path, settings, cache_file_path):
+async def start_conversion(input_folder_path, output_folder_path, settings):
     input_folder_path = pathlib.Path(input_folder_path)
     output_folder_path = pathlib.Path(output_folder_path)
-    cache = await load_cache(cache_file_path)
     error_list = []
+
+    # 查找重复文件
+    duplicates = await find_duplicate_files(input_folder_path)
+    if duplicates:
+        logger.info("Found duplicate files:")
+        for original, duplicate in duplicates:
+            logger.info(f"Original: {original}, Duplicate: {duplicate}")
 
     tasks = []
     for folder in input_folder_path.iterdir():
         if folder.is_dir():
-            tasks.append(process_folder(folder, output_folder_path, settings, cache, error_list))
+            tasks.append(process_folder(folder, output_folder_path, settings, error_list))
 
     await asyncio.gather(*tasks)
-    await save_cache(cache_file_path, cache)
 
     # 汇总出错的文件或文件夹
     if error_list:
@@ -73,4 +52,3 @@ async def start_conversion(input_folder_path, output_folder_path, settings, cach
             for folder, error in error_list:
                 await file.write(f"{folder}: {error}\n")
         logger.error(f"错误日志已保存到 {error_log_file}")
-

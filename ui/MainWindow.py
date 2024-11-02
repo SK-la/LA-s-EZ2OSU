@@ -1,5 +1,4 @@
-import pathlib
-import asyncio
+import pathlib, asyncio, urllib.parse
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QStatusBar
 from qasync import asyncSlot
@@ -74,10 +73,10 @@ class MainWindow(QMainWindow):
 
     @asyncSlot()
     async def start_conversion(self):
-        input_path = self.input_path.text()
+        input_path = urllib.parse.unquote_plus(self.input_path.text())
         output_path = self.output_path.text()
         settings = self.get_conversion_settings()
-        cache_file = 'cache.json'
+        self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
         # 自动创建输出文件夹
         if self.auto_create_output_folder.isChecked():
@@ -88,8 +87,7 @@ class MainWindow(QMainWindow):
             output_path = self.create_output_folder(pathlib.Path(output_path))
 
         # 调用异步处理脚本
-        await start_conversion(input_path, output_path, settings, cache_file)
-
+        await start_conversion(input_path, output_path, settings)
         self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
     def create_output_folder(self, base_path):
@@ -122,8 +120,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("input_path", self.input_path.text())
         self.settings.setValue("output_path", self.output_path.text())
         self.settings.setValue("source", self.config.source)
-        settings = self.get_conversion_settings()
-        settings.save_settings(self.settings)
+        self.get_conversion_settings().save_settings(self.settings)
         self.show_notification("Settings saved successfully!")
 
     def load_settings(self):
