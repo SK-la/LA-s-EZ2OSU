@@ -1,14 +1,19 @@
-import pathlib, asyncio, urllib.parse
+import asyncio
+import pathlib
+import urllib.parse
+
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QStatusBar
 from qasync import asyncSlot
-from ui.styling import set_window_icon, set_background_image
+
+from bin.aio import start_conversion
+from bin.config import get_config
 from ui.layouts import setup_main_layout
-from ui.translations import load_translations, get_system_language
 from ui.osu_path import get_osu_songs_path
 from ui.settings import ConversionSettings
-from bin.config import get_config
-from bin.aio import start_conversion
+from ui.styling import set_window_icon, set_background_image
+from ui.translations import load_translations, get_system_language
+
 
 class MainWindow(QMainWindow):
     def __init__(self):

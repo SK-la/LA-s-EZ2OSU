@@ -90,9 +90,9 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
         file_path = pathlib.Path(item.text(0))
         if file_path.exists() and file_path.is_file():
             output_path = pathlib.Path(self.main_window.output_path.text())
+            cache_folder = pathlib.Path("hash_cache")
             await process_file(
-                file_path, output_path, self.main_window.settings, []
-            )
+                file_path, output_path, self.main_window.settings, [], cache_folder)
             self.main_window.show_notification(f"文件 {file_path} 转换完成")
 
     def delete_file(self, item):

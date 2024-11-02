@@ -1,26 +1,25 @@
-import aiofiles
 import asyncio
 import datetime
 import pathlib
-from bin.Dispatch_file import process_file
-from bin.utils import setup_custom_logger
 from concurrent.futures import ThreadPoolExecutor
 
+import aiofiles
+
+from bin.Dispatch_file import process_file
+from bin.utils import setup_custom_logger
+
 logger = setup_custom_logger(__name__)
-semaphore = asyncio.Semaphore(5000)  # 限制并发任务数量
+semaphore = asyncio.Semaphore(2000)  # 限制并发任务数量
 executor = ThreadPoolExecutor(max_workers=8)  # 设置线程池
 
 async def process_folder(folder_path, output_folder_path, settings, error_list, cache_folder):
     for bmson_file in folder_path.glob("*.bmson"):
         async with semaphore:
             try:
-                await asyncio.get_event_loop().run_in_executor(
-                    executor, process_file, bmson_file, output_folder_path, settings, error_list, cache_folder
-                )
+                await process_file(bmson_file, output_folder_path, settings, error_list, cache_folder)
             except Exception as e:
                 error_list.append((bmson_file, str(e)))
                 logger.error(f"Error processing file {bmson_file}: {e}")
-
 
 async def start_conversion(input_folder_path, output_folder_path, settings, cache_folder):
     input_folder_path = pathlib.Path(input_folder_path)
@@ -46,3 +45,6 @@ async def start_conversion(input_folder_path, output_folder_path, settings, cach
             for folder, error in error_list:
                 await file.write(f"{folder}: {error}\n")
         logger.error(f"错误日志已保存到 {error_log_file}")
+
+# 示例调用
+# asyncio.run(start_conversion('input_folder', 'output_folder', settings, 'cache_folder'))
