@@ -170,3 +170,4 @@ cython_debug/
 /error_log*
 /hash_cache/
 **cache*
+/setup.py

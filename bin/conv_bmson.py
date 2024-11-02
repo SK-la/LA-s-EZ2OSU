@@ -1,6 +1,6 @@
 # conv_bmson.py
 
-def bms(data, info, offset):
+def bms(data, info, audio_data):
     cs = info.CS
     def cal_notex(base_cs, set_x):
         set_x = int((set_x - 1) * 512 / base_cs) + int(256 / base_cs)
@@ -53,9 +53,9 @@ def bms(data, info, offset):
             bms_type = "2PnoteS"
             note_x = cal_notex(cs, x)
 
-        note_time = calculate_pulse_time(y) + offset
+        note_time = calculate_pulse_time(y) + audio_data.offset
         note_type = 128 if l > 0 else 1
-        note_end = f"{calculate_pulse_time(y + l) + offset}:" if l > 0 else ''
+        note_end = f"{calculate_pulse_time(y + l) + audio_data.offset}:" if l > 0 else ''
 
         notes_obj.append(f"{note_x},192,{note_time},{note_type},{hit_sound},{note_end}{hit_sample}")
 

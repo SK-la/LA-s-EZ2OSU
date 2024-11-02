@@ -1,6 +1,6 @@
 # osu.py
 
-def generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs):
+def generate_osu_file(config, info, sv, audio_data, notes_obj, new_cs):
     vdo= '' if info.vdo == '' else f'\nVideo,0,"{info.vdo}"'
 
     osu_content = f"""osu file format v14
@@ -8,7 +8,7 @@ def generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new
 [General]
 AudioFilename: {info.song}
 AudioLeadIn: 0
-PreviewTime: {int(song_lg * 0.4)}
+PreviewTime: {int(audio_data.song_lg * 0.4)}
 Countdown: 0
 SampleSet: Normal
 StackLeniency: 0.7
@@ -57,12 +57,12 @@ SliderTickRate:1
 //Storyboard Sound Samples
 """
     # 将 Samples 列表转换为字符串，每个样本信息占一行
-    samples_str = '\n'.join([str(sample) for sample in samples]) if samples else ""
+    samples_str = '\n'.join([str(sample) for sample in audio_data.samples]) if audio_data.samples else ""
 
     osu_content += samples_str
 
     osu_content += "\n[TimingPoints]\n"
-    osu_content += f"{offset},{info.bpms},4,1,1,100,1,0\n"
+    osu_content += f"{audio_data.offset},{info.bpms},4,1,1,100,1,0\n"
     osu_content += sv if sv else ""
 
     osu_content += "\n\n[HitObjects]\n"

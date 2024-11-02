@@ -1,9 +1,9 @@
 #SV.py
 
-def get_sv(data, offset, info, settings):
+def get_sv(data, audio_data, info, settings):
     resolution = int(info.resolution*4)
     def calculate_pulse_time(y):
-        return round((y - resolution) * info.MpB )
+        return round(y * info.MpB )
     
     sv = []
     if settings.SV:
@@ -11,7 +11,7 @@ def get_sv(data, offset, info, settings):
         stop_events=data.get('stop_events', [])
         bpm_y = bpm_events['y']
         stop_y = stop_events['y']
-        sv_offset = calculate_pulse_time(bpm_y) + offset
+        sv_offset = calculate_pulse_time(bpm_y) + audio_data.offset
         sv_length = stop_y
 
         sv.append(f"{sv_offset},{sv_length},4,1,1,100,1,0\n")
