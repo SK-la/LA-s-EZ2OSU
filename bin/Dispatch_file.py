@@ -77,6 +77,11 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
         error_list.append((bmson_file, str(e)))
         return None
 
+    finally:
+        # 确保文件句柄关闭
+        if 'file' in locals():
+            await file.close()
+
 async def copy_if_not_exists(file_path, destination_path, existing_file_names):
     if not await compare_file_names(existing_file_names, destination_path.name):
         await copy_file(file_path, destination_path)

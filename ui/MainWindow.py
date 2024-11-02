@@ -91,6 +91,12 @@ class MainWindow(QMainWindow):
         await start_conversion(input_path, output_path, settings, cache_folder)
         self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
+        # 显示转换完成通知
+        self.show_conversion_complete_notification()
+
+    def show_conversion_complete_notification(self):
+        QMessageBox.information(self, "转换完成", "文件转换已完成。")
+
     def create_output_folder(self, base_path):
         set_output_folder = base_path / self.config.source
         set_output_folder.mkdir(parents=True, exist_ok=True)
