@@ -73,8 +73,8 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
                     tasks["large"].append(copy_if_not_exists(file_path, song_folder / f"{info.vdo}", existing_file_names_song))
 
         # 批量执行所有任务
-        await asyncio.gather(*tasks["small"])
-        await asyncio.gather(*tasks["large"])
+        await asyncio.gather(*[await task for task in tasks["small"]])
+        await asyncio.gather(*[await task for task in tasks["large"]])
         # 保存哈希缓存
         await save_hash_cache(cache_folder, hash_cache)
         return info
@@ -83,10 +83,10 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
         error_list.append((bmson_file, str(e)))
         return None
 
-    finally:
-        # 确保文件句柄关闭
-        if 'file' in locals():
-            await file.close()
+    # finally:
+    #     # 确保文件句柄关闭
+    #     if 'file' in locals():
+    #         await file.close()
 
 async def copy_if_not_exists(file_path, destination_path, existing_file_names):
     if not await compare_file_names(existing_file_names, destination_path.name):

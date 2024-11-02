@@ -1,9 +1,8 @@
+import aiofiles
 import asyncio
 import datetime
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
-
-import aiofiles
 
 from bin.Dispatch_file import process_file
 from bin.utils import setup_custom_logger
