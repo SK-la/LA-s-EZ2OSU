@@ -168,3 +168,5 @@ cython_debug/
 /log/
 /cache.json
 /error_log*
+/hash_cache/
+**cache*

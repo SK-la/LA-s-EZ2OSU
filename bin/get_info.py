@@ -1,4 +1,8 @@
-import os
+import os, re
+
+def sanitize_name(name):
+    # 移除不允许的特殊字符
+    return re.sub(r'[<>:"/\\|?*]', '_', name)
 
 class Info:
     def __init__(self, title, artist, osumode, bpm, bpms, image, resolution, m_p_b, lv, ver, diff, song, tags, cs, ez_mode, img, vdo, new_folder, sub_folder, osu_filename, img_filename):
@@ -48,8 +52,8 @@ def get_info(data, config):
     else:
         image_diff = image_ext
 
-    artist = f"{config.creator}'s PACK" if config.packset == 'Y' else data['info'].get('artist', '')
-    title = config.source if config.packset == 'Y' else data['info'].get('title', '')
+    artist = f"{config.creator}'s PACK" if config.packset == 'Y' else sanitize_name(data['info'].get('artist', ''))
+    title = config.source if config.packset == 'Y' else sanitize_name(data['info'].get('title', ''))
 
     tags = f"{config.creator} {config.source} {mode} {ez_mode} {artist} {title}"
 

@@ -85,9 +85,10 @@ class MainWindow(QMainWindow):
             self.output_path.setText(str(output_path))
         else:
             output_path = self.create_output_folder(pathlib.Path(output_path))
-
+        # 定义哈希缓存的基础文件夹
+        cache_folder = pathlib.Path("hash_cache")
         # 调用异步处理脚本
-        await start_conversion(input_path, output_path, settings)
+        await start_conversion(input_path, output_path, settings, cache_folder)
         self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
     def create_output_folder(self, base_path):
