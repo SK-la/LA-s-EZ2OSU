@@ -1,4 +1,6 @@
-import os, re
+import os
+import re
+
 
 def sanitize_name(name):
     # 移除不允许的特殊字符

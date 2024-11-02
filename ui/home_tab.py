@@ -1,7 +1,11 @@
-import pathlib, asyncio
-from PyQt5 import QtWidgets
-from bin.Dispatch_file import process_file
+import asyncio
+import pathlib
 import urllib.parse
+
+from PyQt5 import QtWidgets
+
+from bin.Dispatch_file import process_file
+
 
 class HomeTab(QtWidgets.QWidget):
     def __init__(self, parent):
