@@ -74,7 +74,7 @@ class SettingsTab(QtWidgets.QWidget):
         self.main_window.config.noS = self.noS_input.text()
         self.main_window.config.noP = self.noP_input.text()
         self.main_window.config.packset = self.packset_input.text()
-        
+
         # 保存输入输出路径和复选框状态
         self.main_window.settings.setValue("input_path", self.main_window.input_path.text())
         self.main_window.settings.setValue("output_path", self.main_window.output_path.text())
@@ -85,7 +85,8 @@ class SettingsTab(QtWidgets.QWidget):
         self.main_window.settings.setValue("lock_cs_num", self.main_window.lock_cs_num_combobox.currentText())
         self.main_window.settings.setValue("convert_sv", self.main_window.convert_sv.isChecked())
         self.main_window.settings.setValue("convert_sample_bg", self.main_window.convert_sample_bg.isChecked())
-        self.main_window.settings.setValue("auto_create_output_folder", self.main_window.auto_create_output_folder.isChecked())
+        self.main_window.settings.setValue("auto_create_output_folder",
+                                           self.main_window.auto_create_output_folder.isChecked())
         self.main_window.settings.setValue("source", self.source_input.text())
 
         self.main_window.config.save_config({

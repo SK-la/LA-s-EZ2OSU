@@ -5,7 +5,6 @@ from conv_bmson import bms
 from SV import get_sv
 from Samples import get_samples
 from osu import generate_osu_file
-import json
 import os
 import logging
 import json
@@ -16,7 +15,7 @@ from mod.lock_cs import lock_cs
 
 def dispatch(data, settings):
     config = get_config()
-    info = get_info(data, config, settings) 
+    info = get_info(data, config)
     samples,  main_audio, offset, song_lg = get_samples(data, info, settings)
     notes_obj, cs = bms(data, info, offset)
     #print("bms 函数返回的 notes_obj 内容:", notes_obj)
@@ -30,7 +29,7 @@ def dispatch(data, settings):
 
     sv = get_sv(data, offset, info, settings) if settings.convert_sv else ''
     #print("c e c 返回的 notes_obj 类型:", type(notes_obj))
-    osu_content = generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs, settings)
+    osu_content = generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs)
 
 
 
@@ -48,7 +47,7 @@ def dispatch(data, settings):
     # print(f"Difficulty: {info.diff}")
     #print(f"Song: {info.song}")
     # print(f"CS: {info.CS}")
-    # print(f"Mode Hint: {info.EZmode}")
+    # print(f"Mode Hint: {info.ez_mode}")
 
     print(f"New Folder Name: {info.new_folder}")
     print(f"Sub Folder Name: {info.sub_folder}")
@@ -86,7 +85,7 @@ def setup_logging(log_file_path):
     
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='%(pastime)s - %(name)s - %(levelness)s - %(message)s',
         handlers=[
             logging.FileHandler(log_file_path),
             logging.StreamHandler()
@@ -94,11 +93,4 @@ def setup_logging(log_file_path):
     )
 
 # 配置日志记录
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# 检查数据用
-def check_lines(lines):
-    for line in lines:
-        if not line.endswith('.wav'):
-            print(line)
-
+logging.basicConfig(level=logging.DEBUG, format='%(pastime)s - %(levelness)s - %(message)s')

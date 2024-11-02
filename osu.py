@@ -1,6 +1,6 @@
 # osu.py
 
-def generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs, settings):
+def generate_osu_file(config, info, sv, offset, samples, song_lg, notes_obj, new_cs):
     vdo= '' if info.vdo == '' else f'\nVideo,0,"{info.vdo}"'
 
     osu_content = f"""osu file format v14
@@ -32,7 +32,7 @@ Artist:{info.artist}
 ArtistUnicode:{info.artist}
 Creator:{config.creator}
 Version:{info.ver}
-Source:{settings.source}
+Source:{config.source}
 Tags:{info.tags}{config.tags}
 BeatmapID:0
 BeatmapSetID:-1

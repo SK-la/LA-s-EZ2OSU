@@ -1,9 +1,9 @@
-# converter_bmson.py
+# conv_bmson.py
 
 def bms(data, info, offset):
     cs = info.CS
-    def cal_notex(cs, set_x):
-        set_x = int((set_x - 1) * 512 / cs) + int(256 / cs)
+    def cal_notex(base_cs, set_x):
+        set_x = int((set_x - 1) * 512 / base_cs) + int(256 / base_cs)
         return set_x
 
     def calculate_pulse_time(note_y):
@@ -13,7 +13,7 @@ def bms(data, info, offset):
     hit_sound = 0
     normal_set = 0
     addition_set = 0
-    ksindex = 0
+    ks_index = 0
     volume = 100
     note_x = 8
     notes_obj = []
@@ -21,8 +21,8 @@ def bms(data, info, offset):
 
     for channel in data['sound_channels']:
         notes = channel['notes']
-        ksfilename = channel['name'].replace("sound\\", f"{info.sub_folder}/")
-        hit_sample = f"{normal_set}:{addition_set}:{ksindex}:{volume}:{ksfilename}"
+        ks_filename = channel['name'].replace("sound\\", f"{info.sub_folder}/")
+        hit_sample = f"{normal_set}:{addition_set}:{ks_index}:{volume}:{ks_filename}"
         
         for note in notes:
             x = note['x']
@@ -33,7 +33,7 @@ def bms(data, info, offset):
             if 1 <= x <= 16:
                 valid_notes.append((x, y, l, hit_sample))
     # 按 y 值排序，重新计算
-    valid_notes.sort(key=lambda notes: notes[1])
+    valid_notes.sort(key=lambda notey: notey[1])
     # 重置y值从0开始
     min_y = valid_notes[0][1] if valid_notes else 0
     valid_notes = [(x, y - min_y, L, hitSample) for x, y, L, hitSample in valid_notes]

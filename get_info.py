@@ -1,7 +1,4 @@
 import os
-from config import get_config
-
-config = get_config()
 
 class Info:
     def __init__(self, title, artist, osumode, bpm, bpms, image, resolution, m_p_b, lv, ver, diff, song, tags, cs, ez_mode, img, vdo, new_folder, sub_folder, osu_filename, img_filename):
@@ -18,7 +15,7 @@ class Info:
         self.song = song
         self.tags = tags
         self.CS = cs
-        self.EZmode = ez_mode
+        self.ez_mode = ez_mode
         self.img = img
         self.vdo = vdo
         self.new_folder = new_folder
@@ -27,7 +24,7 @@ class Info:
         self.img_filename = img_filename
         self.osumode = osumode
 
-def get_info(data, config, settings):
+def get_info(data, config):
     mode_hint = data['info'].get('mode_hint', '').split('-')[-1]
     cs = {'5k': 7, '7k': 8, '9k': 9, '10k': 12, '14k': 16}.get(mode_hint, 18)
 
@@ -52,9 +49,9 @@ def get_info(data, config, settings):
         image_diff = image_ext
 
     artist = f"{config.creator}'s PACK" if config.packset == 'Y' else data['info'].get('artist', '')
-    title = settings.source if config.packset == 'Y' else data['info'].get('title', '')
+    title = config.source if config.packset == 'Y' else data['info'].get('title', '')
 
-    tags = f"{config.creator} {settings.source} {mode} {ez_mode} {artist} {title}"
+    tags = f"{config.creator} {config.source} {mode} {ez_mode} {artist} {title}"
 
 
     bga_name = data.get('bga', {}).get('bga_header', [{}])[0].get('name', '')

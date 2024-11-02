@@ -61,7 +61,7 @@ class ClmTab(QtWidgets.QWidget):
         if button.isChecked():
             k = int(button.text())
             self.bottom_layout = self.create_editable_layout(k, self.bottom_layout)
-
+    @staticmethod
     def create_fixed_layout(self, k, layout):
         # 清空当前布局
         for i in reversed(range(layout.count())):
@@ -76,6 +76,7 @@ class ClmTab(QtWidgets.QWidget):
 
         return layout
 
+    @staticmethod
     def create_editable_layout(self, k, layout):
         # 清空当前布局
         for i in reversed(range(layout.count())):

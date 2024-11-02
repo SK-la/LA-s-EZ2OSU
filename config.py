@@ -21,7 +21,7 @@ class Config:
                 'noP': 'N',
                 'Packset': 'N'
             }
-            with open(self.config_file, 'w') as configfile:
+            with open(self.config_file, 'w', encoding='utf-8') as configfile:
                 self.config.write(configfile)
 
     def _load_config(self):
@@ -46,7 +46,7 @@ class Config:
             'noP': settings['noP'],
             'Packset': settings['packset']
         }
-        with open(self.config_file, 'w') as configfile:
+        with open(self.config_file, 'w', encoding='utf-8') as configfile:
             self.config.write(configfile)
 
 # 单例模式实现

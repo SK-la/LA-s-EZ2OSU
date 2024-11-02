@@ -1,49 +1,51 @@
-#home_tab.py
 import pathlib
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from Dispatch_file import process_file
 
 class HomeTab(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.initUI()
         # 文件夹结构树
-        self.input_tree = FileTreeWidget(self, "input")
+        self.input_tree = FileTreeWidget(self, "input", parent)
         self.input_tree.setHeaderLabel("输入文件夹结构")
-        self.output_tree = FileTreeWidget(self, "output")
+        self.output_tree = FileTreeWidget(self, "output", parent)
         self.output_tree.setHeaderLabel("输出文件夹结构")
+        self.initUI()
 
     def initUI(self):
         layout = QtWidgets.QVBoxLayout()
-        
+
         tree_layout = QtWidgets.QHBoxLayout()
         tree_layout.addWidget(self.input_tree)
         tree_layout.addWidget(self.output_tree)
-        
+
         layout.addLayout(tree_layout)
         self.setLayout(layout)
 
     def start_conversion(self):
         self.parent.start_conversion()
 
+
 class FileTreeWidget(QtWidgets.QTreeWidget):
-    def __init__(self, parent, tree_type):
+    def __init__(self, parent, tree_type, main_window):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self.tree_type = tree_type
+        self.main_window = main_window
 
     def populate_tree(self, folder_path):
         self.clear()
         root = QtWidgets.QTreeWidgetItem(self, [str(folder_path)])
         self.add_tree_items(root, folder_path)
         if self.tree_type == "input":
-            self.expandAll()
+            self.expandToDepth(0)
         else:
-            self.expandToDepth(0) #默认只展开一级文件夹
+            self.expandToDepth(0)  # 默认只展开一级文件夹
 
     def add_tree_items(self, parent_item, folder_path):
-        for item in folder_path.iterdir():
+        items = sorted(folder_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+        for item in items:
             if item.is_dir():
                 dir_item = QtWidgets.QTreeWidgetItem(parent_item, [item.name])
                 self.add_tree_items(dir_item, item)
@@ -62,9 +64,9 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
             if path.exists() and path.is_dir():
                 self.populate_tree(path)
                 if self.tree_type == "input":
-                    self.parent().parent.input_path.setText(str(path))
+                    self.main_window.input_path.setText(str(path))
                 elif self.tree_type == "output":
-                    self.parent().parent.output_path.setText(str(path))
+                    self.main_window.output_path.setText(str(path))
 
     def contextMenuEvent(self, event):
         item = self.itemAt(event.pos())
@@ -81,11 +83,9 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
     def convert_file(self, item):
         file_path = pathlib.Path(item.text(0))
         if file_path.exists() and file_path.is_file():
-            output_path = pathlib.Path(self.parent().parent.output_path.text())
+            output_path = pathlib.Path(self.main_window.output_path.text())
             process_file(
-                file_path, output_path, 
-                self.parent().parent.include_audio.isChecked(), 
-                self.parent().parent.include_images.isChecked()
+                file_path, output_path, self.main_window.settings
             )
 
     def delete_file(self, item):

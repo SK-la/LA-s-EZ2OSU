@@ -1,5 +1,6 @@
 import pathlib
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import Qt  # 确保导入 Qt
 
 def set_window_icon(window):
     icon_path = pathlib.Path(__file__).parent.parent / 'BGi' / 'icon.png'
@@ -20,16 +21,13 @@ def set_background_image(window):
     painter.end()
 
     label.setPixmap(dark_pixmap)
-    label.setScaledContents(True)
-    label.setGeometry(0, 0, window.width(), window.height())
+    label.setAlignment(Qt.AlignCenter)  # 使用 Qt.AlignCenter
     label.setStyleSheet("background: transparent; border: none;")
     label.lower()
 
     def resize_event(event):
-        label.setGeometry(0, 0, window.width(), window.height())
-        scaled_pixmap = dark_pixmap.scaled(window.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        label.setPixmap(scaled_pixmap)
-        super(window.__class__, window).resizeEvent(event)
+        label.resize(window.size())
+        super(QtWidgets.QMainWindow, window).resizeEvent(event)
 
     window.resizeEvent = resize_event
 
@@ -115,18 +113,18 @@ line_edit_style = """
         border-radius: 5px;
         border: 1px solid #555;
         text-align: center;  /* 数字居中显示 */
-        qproperty-alignment: 'AlignCenter';  /* 确保居中对齐 */
+        property-alignment: 'AlignCenter';  /* 确保居中对齐 */
     }
     QLineEdit:focus {
         border: 1px solid #00f;
         text-align: center;
-        qproperty-alignment: 'AlignCenter';  /* 确保焦点状态下居中对齐 */
+        property-alignment: 'AlignCenter';  /* 确保焦点状态下居中对齐 */
     }
 """
 
 drag_area_style = """
     QFrame {
-        background-color: lightgray;
+        background-color: light-gray;
     }
 """
 
