@@ -1,4 +1,4 @@
-#osu_path.py
+#ui/osu_path.py
 import pathlib
 import winreg
 from PyQt5.QtWidgets import QFileDialog, QMessageBox

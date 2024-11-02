@@ -1,15 +1,15 @@
-# MainWindow.py
 import pathlib
-import concurrent.futures
+import asyncio
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QStatusBar
-from config import get_config
-from Dispatch_file import process_file
+from qasync import asyncSlot
 from ui.styling import set_window_icon, set_background_image
 from ui.layouts import setup_main_layout
 from ui.translations import load_translations, get_system_language
 from ui.osu_path import get_osu_songs_path
 from ui.settings import ConversionSettings
+from bin.config import get_config
+from bin.aio import start_conversion
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -22,8 +22,8 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
 
         self.initUI()
-        self.update_language()  # 更新界面语言
-        self.load_settings()  # 加载设置
+        self.update_language()
+        self.load_settings()
         self.restore_window_position()
 
     def initUI(self):
@@ -33,11 +33,10 @@ class MainWindow(QMainWindow):
         set_background_image(self)
 
         central_widget = QtWidgets.QWidget()
-        self.setCentralWidget(central_widget)  # 使用 QMainWindow 的 setCentralWidget 方法
-        setup_main_layout(central_widget, self)  # 传递 central_widget 和 MainWindow 实例
+        self.setCentralWidget(central_widget)
+        setup_main_layout(central_widget, self)
 
         self.auto_create_output_folder.stateChanged.connect(self.handle_auto_create_output_folder)
-
         self.setStatusBar(self.status_bar)  # 添加状态栏
 
     def show_notification(self, message):
@@ -73,52 +72,32 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(self, "错误", "未选择 osu! 安装路径，请手动设置输出文件夹。")
                     self.auto_create_output_folder.setChecked(False)
 
-    @staticmethod
-    def process_folder(folder_path, output_path, settings):
-        for bmson_file in folder_path.glob("**/*.bmson"):
-            process_file(bmson_file, output_path, settings)
+    @asyncSlot()
+    async def start_conversion(self):
+        input_path = self.input_path.text()
+        output_path = self.output_path.text()
+        settings = self.get_conversion_settings()
+        cache_file = 'cache.json'
 
-    def start_conversion(self):
-        input_path = pathlib.Path(self.input_path.text())
-        output_path = pathlib.Path(self.output_path.text())
-        
-        # 获取复选框和下拉框的值
-        settings = ConversionSettings(
-            include_audio=self.include_audio.isChecked(),
-            include_images=self.include_images.isChecked(),
-            remove_empty_columns=self.remove_empty_columns.isChecked(),
-            lock_cs_set=self.lock_cs_set.isChecked(),
-            lock_cs_num=self.lock_cs_num_combobox.currentText(),
-            convert_sv=self.convert_sv.isChecked(),
-            convert_sample_bg=self.convert_sample_bg.isChecked(),
-            auto_create_output_folder=self.auto_create_output_folder.isChecked(),
-        )
         # 自动创建输出文件夹
         if self.auto_create_output_folder.isChecked():
             osu_songs_path = pathlib.Path(self.settings.value("osu_songs_path"))
-            set_output_folder = osu_songs_path / self.config.source
-            set_output_folder.mkdir(parents=True, exist_ok=True)
-            output_path = set_output_folder
+            output_path = self.create_output_folder(osu_songs_path)
             self.output_path.setText(str(output_path))
-            self.home_tab.output_tree.populate_tree(output_path)
         else:
-            set_output_folder = output_path / self.config.source
-            set_output_folder.mkdir(parents=True, exist_ok=True)
+            output_path = self.create_output_folder(pathlib.Path(output_path))
 
-        # 使用多线程处理文件夹
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for folder in input_path.iterdir():
-                if folder.is_dir():
-                    futures.append(executor.submit(self.process_folder, folder, output_path, settings))
-            
-            # 等待所有线程完成
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    print(f"Error processing folder: {e}")
-        # 更新文件树
+        # 调用异步处理脚本
+        await start_conversion(input_path, output_path, settings, cache_file)
+
+        self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
+
+    def create_output_folder(self, base_path):
+        set_output_folder = base_path / self.config.source
+        set_output_folder.mkdir(parents=True, exist_ok=True)
+        return set_output_folder
+
+    def update_file_trees(self, input_path, output_path):
         self.home_tab.input_tree.populate_tree(input_path)
         self.home_tab.output_tree.populate_tree(output_path)
 
@@ -126,10 +105,16 @@ class MainWindow(QMainWindow):
         pos = self.settings.value("window_position", None)
         if pos:
             self.move(pos)
+
     def closeEvent(self, event):
         self.save_window_position()
         self.save_settings()
+        loop = asyncio.get_event_loop()
+        for task in asyncio.all_tasks(loop):
+            task.cancel()
+        loop.stop()
         event.accept()
+
     def save_window_position(self):
         self.settings.setValue("window_position", self.pos())
 
@@ -137,16 +122,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("input_path", self.input_path.text())
         self.settings.setValue("output_path", self.output_path.text())
         self.settings.setValue("source", self.config.source)
-        settings = ConversionSettings(
-            include_audio=self.include_audio.isChecked(),
-            include_images=self.include_images.isChecked(),
-            remove_empty_columns=self.remove_empty_columns.isChecked(),
-            lock_cs_set=self.lock_cs_set.isChecked(),
-            lock_cs_num=self.lock_cs_num_combobox.currentText(),
-            convert_sv=self.convert_sv.isChecked(),
-            convert_sample_bg=self.convert_sample_bg.isChecked(),
-            auto_create_output_folder=self.auto_create_output_folder.isChecked(),
-        )
+        settings = self.get_conversion_settings()
         settings.save_settings(self.settings)
         self.show_notification("Settings saved successfully!")
 
@@ -171,3 +147,17 @@ class MainWindow(QMainWindow):
             self.home_tab.input_tree.populate_tree(input_path)
         if output_path.exists():
             self.home_tab.output_tree.populate_tree(output_path)
+
+    def get_conversion_settings(self):
+        # 获取转换设置的逻辑
+        settings = ConversionSettings(
+            include_audio=self.include_audio.isChecked(),
+            include_images=self.include_images.isChecked(),
+            remove_empty_columns=self.remove_empty_columns.isChecked(),
+            lock_cs_set=self.lock_cs_set.isChecked(),
+            lock_cs_num=self.lock_cs_num_combobox.currentText(),
+            convert_sv=self.convert_sv.isChecked(),
+            convert_sample_bg=self.convert_sample_bg.isChecked(),
+            auto_create_output_folder=self.auto_create_output_folder.isChecked()
+        )
+        return settings

@@ -1,11 +1,16 @@
-# main.py
 import sys
+import asyncio
 from PyQt5 import QtWidgets
-from ui.MainWindow import MainWindow
+from qasync import QEventLoop
+from ui.MainWindow import MainWindow  # 确保路径正确
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+
     main_window = MainWindow()
     main_window.show()
-    sys.exit(app.exec_())
 
+    with loop:
+        loop.run_forever()

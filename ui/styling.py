@@ -1,6 +1,7 @@
+#ui/styling.py
 import pathlib
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt  # 确保导入 Qt
+from PyQt5.QtCore import Qt
 
 def set_window_icon(window):
     icon_path = pathlib.Path(__file__).parent.parent / 'BGi' / 'icon.png'
@@ -21,7 +22,7 @@ def set_background_image(window):
     painter.end()
 
     label.setPixmap(dark_pixmap)
-    label.setAlignment(Qt.AlignCenter)  # 使用 Qt.AlignCenter
+    label.setAlignment(Qt.AlignCenter)
     label.setStyleSheet("background: transparent; border: none;")
     label.lower()
 

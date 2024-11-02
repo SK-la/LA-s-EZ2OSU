@@ -1,21 +1,22 @@
-# config.py
+#bin/config.py
 import configparser
-import os
+import pathlib
 
 class Config:
     def __init__(self, config_file='config.ini'):
-        self.config_file = config_file
+        # 使用绝对路径确保配置文件在程序的根目录下
+        self.config_file = pathlib.Path(config_file).resolve()
         self.config = configparser.ConfigParser()
         self._check_and_create_config()
         self._load_config()
 
     def _check_and_create_config(self):
-        if not os.path.exists(self.config_file):
+        if not self.config_file.exists():
             self.config['DEFAULT'] = {
                 'Creator': 'SK_la',
                 'HP': '8',
                 'OD': '7',
-                'Source': 'EZ2AC',
+                'Source': 'LA\'s EZ2OSU',
                 'Tags': '',
                 'noS': 'N',
                 'noP': 'N',

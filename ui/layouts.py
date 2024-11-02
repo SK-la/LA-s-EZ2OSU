@@ -23,7 +23,7 @@ def setup_checkboxes(main_window):
     main_window.convert_sv.setChecked(True)
     main_window.convert_sample_bg = QtWidgets.QCheckBox("转换采样背景音")
     main_window.convert_sample_bg.setChecked(True)
-    main_window.remove_empty_columns = QtWidgets.QCheckBox("去除原谱空列")
+    main_window.remove_empty_columns = QtWidgets.QCheckBox("去除空列")
     main_window.remove_empty_columns.setChecked(True)
     main_window.lock_cs_set = QtWidgets.QCheckBox("去除空列时锁定CS数")
     main_window.lock_cs_set.setChecked(True)

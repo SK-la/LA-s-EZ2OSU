@@ -1,5 +1,4 @@
-#translations.py
-
+#ui/translations.py
 import json
 import os
 

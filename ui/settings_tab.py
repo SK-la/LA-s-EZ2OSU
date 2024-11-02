@@ -3,8 +3,24 @@ from PyQt5 import QtWidgets
 
 class SettingsTab(QtWidgets.QWidget):
     def __init__(self, main_window):
-        super().__init__()
+        super().__init__(main_window)
         self.main_window = main_window
+        self.creator_label = None
+        self.creator_input = None
+        self.hp_label = None
+        self.hp_input = None
+        self.od_label = None
+        self.od_input = None
+        self.source_label = None
+        self.source_input = None
+        self.tags_label = None
+        self.tags_input = None
+        self.noS_label = None
+        self.noS_input = None
+        self.noP_label = None
+        self.noP_input = None
+        self.packset_label = None
+        self.packset_input = None
         self.init_ui()
 
     def init_ui(self):

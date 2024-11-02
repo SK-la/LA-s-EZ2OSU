@@ -1,11 +1,13 @@
 import pathlib
+import asyncio
 from PyQt5 import QtWidgets
-from Dispatch_file import process_file
+from bin.Dispatch_file import process_file
 
 class HomeTab(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
+        self.cache_lock = asyncio.Lock()  # 使用 asyncio 锁
         # 文件夹结构树
         self.input_tree = FileTreeWidget(self, "input", parent)
         self.input_tree.setHeaderLabel("输入文件夹结构")
@@ -25,7 +27,6 @@ class HomeTab(QtWidgets.QWidget):
 
     def start_conversion(self):
         self.parent.start_conversion()
-
 
 class FileTreeWidget(QtWidgets.QTreeWidget):
     def __init__(self, parent, tree_type, main_window):
@@ -74,18 +75,20 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
             menu = QtWidgets.QMenu(self)
             if self.tree_type == "input":
                 convert_action = menu.addAction("转换")
-                convert_action.triggered.connect(lambda: self.convert_file(item))
+                convert_action.triggered.connect(lambda: asyncio.create_task(self.convert_file(item)))
             elif self.tree_type == "output":
                 delete_action = menu.addAction("删除")
                 delete_action.triggered.connect(lambda: self.delete_file(item))
             menu.exec_(event.globalPos())
 
-    def convert_file(self, item):
+    async def convert_file(self, item):
         file_path = pathlib.Path(item.text(0))
         if file_path.exists() and file_path.is_file():
             output_path = pathlib.Path(self.main_window.output_path.text())
-            process_file(
-                file_path, output_path, self.main_window.settings
+            cache = self.main_window.cache  # 获取缓存
+            cache_lock = self.main_window.cache_lock  # 获取缓存锁
+            await process_file(
+                file_path, output_path, self.main_window.settings, cache, cache_lock
             )
 
     def delete_file(self, item):

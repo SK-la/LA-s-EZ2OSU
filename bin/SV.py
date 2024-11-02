@@ -1,4 +1,4 @@
-#events.py
+#SV.py
 
 def get_sv(data, offset, info, settings):
     resolution = int(info.resolution*4)
