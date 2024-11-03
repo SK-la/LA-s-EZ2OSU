@@ -21,6 +21,9 @@ def get_samples(data, info, settings):
 
     song_lg = round((y_end - y_start) * info.MpB)
     offset = round((y_min - y_start) * info.MpB)
+    if offset == 0:
+        offset = round(y_start * info.MpB)
+
 
     samples = []
     if settings.convert_sample_bg:
