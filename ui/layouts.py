@@ -45,7 +45,7 @@ def setup_tabs(main_window):
     main_window.tabs.addTab(main_window.home_tab, "Home")
     from ui.clm_tab import ClmTab
     main_window.clm_tab = ClmTab(main_window)
-    main_window.tabs.addTab(main_window.clm_tab, "Clm")
+    main_window.tabs.addTab(main_window.clm_tab, "Clm（暂不生效）")
     from ui.settings_tab import SettingsTab
     main_window.settings_tab = SettingsTab(main_window)
     main_window.tabs.addTab(main_window.settings_tab, "Settings")

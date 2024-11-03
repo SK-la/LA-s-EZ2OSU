@@ -25,13 +25,13 @@ class SettingsTab(QtWidgets.QWidget):
     def init_ui(self):
         layout = QtWidgets.QVBoxLayout()
 
-        self.noS_checkbox = QtWidgets.QCheckBox("No Scratch")
+        self.noS_checkbox = QtWidgets.QCheckBox("No Scratch（未测试）")
         self.noS_checkbox.setChecked(self.main_window.config.noS == 'Y')
 
-        self.noP_checkbox = QtWidgets.QCheckBox("No Panel")
+        self.noP_checkbox = QtWidgets.QCheckBox("No Panel（暂不生效）")
         self.noP_checkbox.setChecked(self.main_window.config.noP == 'Y')
 
-        self.packset_checkbox = QtWidgets.QCheckBox("Packset")
+        self.packset_checkbox = QtWidgets.QCheckBox("Packset（未测试）")
         self.packset_checkbox.setChecked(self.main_window.config.packset == 'Y')
 
         self.creator_label = QtWidgets.QLabel("Creator:")
@@ -46,19 +46,19 @@ class SettingsTab(QtWidgets.QWidget):
         self.od_input = QtWidgets.QLineEdit()
         self.od_input.setText(str(self.main_window.config.OD))
 
-        self.source_label = QtWidgets.QLabel("Source:")
+        self.source_label = QtWidgets.QLabel("Source:(勾选自动创建文件夹时，在songs下创建此设置的文件夹包)")
         self.source_input = QtWidgets.QLineEdit()
         self.source_input.setText(self.main_window.config.source)
 
-        self.tags_label = QtWidgets.QLabel("Tags:")
+        self.tags_label = QtWidgets.QLabel("Tags:（除默认歌曲作者等模板外，再追加的tags，空格分隔）")
         self.tags_input = QtWidgets.QLineEdit()
         self.tags_input.setText(self.main_window.config.tags)
 
-        self.specific_numbers_label = QtWidgets.QLabel("N to N key button:")
+        self.specific_numbers_label = QtWidgets.QLabel("N to N key button:（暂不生效）")
         self.specific_numbers_input = QtWidgets.QLineEdit()
         self.specific_numbers_input.setText(','.join(self.main_window.config.specific_numbers))
 
-        save_button = QtWidgets.QPushButton("保存设置")
+        save_button = QtWidgets.QPushButton("保存设置（转换时勿动）")
         save_button.clicked.connect(self.save_settings)
 
         layout.addWidget(self.noS_checkbox)
