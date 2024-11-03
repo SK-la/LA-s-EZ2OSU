@@ -30,8 +30,9 @@ def dispatch(data, settings):
     logger.info(f"Sub Folder Name: {info.sub_folder}")
     logger.info(f"Osu Filename: {info.osu_filename}")
     logger.info(f"Img Filename: {info.img_filename}")
+    logger.info(f"Img Filename: {audio_data.main_audio}")
     print(f"Osu Filename: {info.osu_filename}")
-    return osu_content, info, audio_data.main_audio
+    return osu_content, info, audio_data
 
 
 

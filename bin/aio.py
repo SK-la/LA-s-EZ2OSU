@@ -8,7 +8,7 @@ from bin.Dispatch_file import process_file
 from bin.utils import setup_custom_logger
 
 logger = setup_custom_logger(__name__)
-semaphore = asyncio.Semaphore(2000)  # 限制并发任务数量
+semaphore = asyncio.Semaphore(50)  # 限制并发任务数量
 executor = ThreadPoolExecutor(max_workers=8)  # 设置线程池
 
 async def process_folder(folder_path, output_folder_path, settings, error_list, cache_folder):
