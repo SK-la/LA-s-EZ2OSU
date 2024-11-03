@@ -4,7 +4,6 @@ import pathlib
 import urllib.parse
 
 from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox, QMainWindow
 
 from bin.config import get_config
@@ -45,8 +44,7 @@ class MainWindow(QMainWindow):
 
         self.restore_window_position()
         self.worker_thread = QtCore.QThread()
-        # 延迟初始化
-        QTimer.singleShot(0, self.delayed_initialization)
+        self.worker = None
 
     def initUI(self):
         self.setWindowTitle('LAs EZ2OSU')
@@ -109,6 +107,7 @@ class MainWindow(QMainWindow):
             settings=self.get_conversion_settings(),
             cache_folder=pathlib.Path("hash_cache"),
         )
+        self.worker_thread = QtCore.QThread()  # 每次创建新的线程
         self.worker.moveToThread(self.worker_thread)
         # 连接信号和槽
         self.worker.conversion_finished.connect(self.conversion_finished_handler)
@@ -125,6 +124,7 @@ class MainWindow(QMainWindow):
         self.worker_thread.quit()
         self.worker_thread.wait()
         self.worker_thread.deleteLater()
+        self.worker_thread = None
 
     def start_conversion(self):
         # 自动创建输出文件夹

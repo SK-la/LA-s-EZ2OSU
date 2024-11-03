@@ -34,12 +34,12 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
             # 如果存在后缀，则将其添加到 info.new_folder 后面
             info.new_folder += parent_name_suffix
 
-        song_folder = pathlib.Path(output_folder) / info.new_folder
+        song_folder = pathlib.Path(output_folder / info.new_folder )
         song_folder.mkdir(parents=True, exist_ok=True)
-        sub_folder = song_folder / info.sub_folder
+        sub_folder = pathlib.Path(song_folder / info.sub_folder)
         sub_folder.mkdir(parents=True, exist_ok=True)
 
-        osu_file_path = song_folder / f"{info.osu_filename}.osu"
+        osu_file_path = pathlib.Path(song_folder / f"{info.osu_filename}.osu")
 
         if osu_file_path.exists():
             existing_md5 = hash_cache.get(str(osu_file_path))
