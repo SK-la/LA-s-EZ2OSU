@@ -101,6 +101,7 @@ class MainWindow(QMainWindow):
                     self.auto_create_output_folder.setChecked(False)
 
     def start_conversion_thread(self):
+        self.update_status("运行中，请勿关闭")
         self.worker = ConversionWorker(
             input_path=urllib.parse.unquote_plus(self.input_path.text()),
             output_path=self.output_path.text(),
@@ -142,9 +143,10 @@ class MainWindow(QMainWindow):
         self.start_conversion_thread()
         self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
-
     def show_conversion_complete_notification(self):
         QMessageBox.information(self, "Message", "程序结束")
+    def update_status(self, message):
+        self.status_bar.showMessage(message)
 
     def create_output_folder(self, base_path):
         set_output_folder = base_path / self.config.source
