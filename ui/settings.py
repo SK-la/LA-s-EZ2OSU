@@ -1,4 +1,10 @@
 #ui/settings.py
+import asyncio
+
+from PyQt6.QtCore import pyqtSignal, QObject
+
+from bin.aio import start_conversion
+
 class ConversionSettings:
     def __init__(self, include_audio, include_images, remove_empty_columns, lock_cs_set, lock_cs_num, convert_sv, convert_sample_bg, auto_create_output_folder):
         self.include_audio = include_audio
@@ -33,3 +39,19 @@ class ConversionSettings:
         return cls(include_audio, include_images, remove_empty_columns, lock_cs_set, lock_cs_num, convert_sv,
                    convert_sample_bg, auto_create_output_folder)
 
+class ConversionWorker(QObject):
+    conversion_finished = pyqtSignal()
+
+    def __init__(self, input_path, output_path, settings, cache_folder):
+        super().__init__()
+        self.input_path = input_path
+        self.output_path = output_path
+        self.settings = settings
+        self.cache_folder = cache_folder
+
+    def run_conversion(self):
+        asyncio.run(self._run_conversion())
+
+    async def _run_conversion(self):
+        await start_conversion(self.input_path, self.output_path, self.settings, self.cache_folder)
+        self.conversion_finished.emit()

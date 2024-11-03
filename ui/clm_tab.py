@@ -1,16 +1,16 @@
-#ui/clm_tab.py
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QEvent
+from PyQt6 import QtWidgets, QtCore
+
 import ui.styling
+from bin.config import config
 
 
 class ClmTab(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.top_widget = None  # 在 __init__ 中定义实例属性
-        self.bottom_widget = None  # 在 __init__ 中定义实例属性
-        self.top_layout = None  # 在 __init__ 中定义实例属性
-        self.bottom_layout = None  # 在 __init__ 中定义实例属性
+        self.top_widget = None
+        self.bottom_widget = None
+        self.top_layout = None
+        self.bottom_layout = None
         self.initUI()
 
     def initUI(self):
@@ -44,22 +44,21 @@ class ClmTab(QtWidgets.QWidget):
     def create_radio_buttons(self, layout, toggle_function):
         button_group = QtWidgets.QButtonGroup(self)
         button_layout = QtWidgets.QHBoxLayout()
-        for i in range(4, 19):
-            button = QtWidgets.QRadioButton(str(i))
+        specific_numbers = config.specific_numbers
+        for number in specific_numbers:
+            button = QtWidgets.QRadioButton(str(number))
             button.setStyleSheet(ui.styling.radio_button_style)
-            button.toggled.connect(toggle_function)
+            button.toggled.connect(lambda checked, b=button: toggle_function(b))
             button_group.addButton(button)
             button_layout.addWidget(button)
         layout.addLayout(button_layout)
 
-    def update_top_layout(self):
-        button = self.sender()
+    def update_top_layout(self, button):
         if button.isChecked():
             k = int(button.text())
             self.top_layout = self.create_fixed_layout(k, self.top_layout)
 
-    def update_bottom_layout(self):
-        button = self.sender()
+    def update_bottom_layout(self, button):
         if button.isChecked():
             k = int(button.text())
             self.bottom_layout = self.create_editable_layout(k, self.bottom_layout)
@@ -73,7 +72,7 @@ class ClmTab(QtWidgets.QWidget):
         # 添加K个固定数字的标签
         for i in range(k):
             label = QtWidgets.QLabel(str(i + 1))
-            label.setAlignment(Qt.AlignCenter)
+            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet(ui.styling.label_style)
             layout.addWidget(label)
 
@@ -99,7 +98,7 @@ class AutoSwitchLineEdit(QtWidgets.QLineEdit):
         super().__init__(parent)
         self.setMaxLength(1)  # 每个输入框只允许输入一个字符
         self.textChanged.connect(self.switch_focus)
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.installEventFilter(self)
 
     def switch_focus(self, text):
@@ -110,6 +109,6 @@ class AutoSwitchLineEdit(QtWidgets.QLineEdit):
                 next_widget.selectAll()  # 选择所有文本以便覆盖
 
     def eventFilter(self, source, event):
-        if event.type() == QEvent.FocusIn:
+        if event.type() == QtCore.QEvent.Type.FocusIn:
             self.selectAll()
         return super().eventFilter(source, event)

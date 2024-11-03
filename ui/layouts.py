@@ -1,6 +1,8 @@
 #ui/layouts.py
-from PyQt5 import QtWidgets, QtGui
 import pathlib
+
+from PyQt6 import QtWidgets, QtGui
+
 
 def setup_combobox(main_window):
     lock_cs_num_layout = QtWidgets.QHBoxLayout()
@@ -27,7 +29,7 @@ def setup_checkboxes(main_window):
     main_window.remove_empty_columns.setChecked(True)
     main_window.lock_cs_set = QtWidgets.QCheckBox("去除空列时锁定CS数")
     main_window.lock_cs_set.setChecked(True)
-    
+
     checkbox_layout.addWidget(main_window.include_audio)
     checkbox_layout.addWidget(main_window.include_images)
     checkbox_layout.addWidget(main_window.convert_sv)
@@ -53,16 +55,16 @@ def setup_main_layout(central_widget, main_window):
     main_layout = QtWidgets.QVBoxLayout(central_widget)
 
     input_layout = QtWidgets.QHBoxLayout()
-    main_window.input_path = DropLineEdit(main_window, "input")
+    main_window.input_path = DropLineEdit(main_window, "input", main_window)
     main_window.input_path.setPlaceholderText("输入文件夹路径")
     input_button = QtWidgets.QPushButton("设置输入")
     input_button.clicked.connect(main_window.select_input)
     input_layout.addWidget(main_window.input_path)
     input_layout.addWidget(input_button)
     main_layout.addLayout(input_layout)
-    
+
     output_layout = QtWidgets.QHBoxLayout()
-    main_window.output_path = DropLineEdit(main_window, "output")
+    main_window.output_path = DropLineEdit(main_window, "output", main_window)
     main_window.output_path.setPlaceholderText("输出文件夹路径")
     output_button = QtWidgets.QPushButton("设置输出")
     output_button.clicked.connect(main_window.select_output)
@@ -73,7 +75,7 @@ def setup_main_layout(central_widget, main_window):
     main_window.start_button = QtWidgets.QPushButton("开始转换")
     main_window.start_button.clicked.connect(main_window.start_conversion)
     main_layout.addWidget(main_window.start_button)
-    
+
     checkbox_layout = setup_checkboxes(main_window)
     main_layout.addLayout(checkbox_layout)
 
@@ -96,9 +98,10 @@ def setup_main_layout(central_widget, main_window):
     apply_glow_effect(output_button)
 
 class DropLineEdit(QtWidgets.QLineEdit):
-    def __init__(self, parent=None, path_type="input"):
+    def __init__(self, parent=None, path_type="input", main_window=None):
         super().__init__(parent)
         self.path_type = path_type
+        self.main_window = main_window
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, event):
@@ -112,9 +115,9 @@ class DropLineEdit(QtWidgets.QLineEdit):
             if pathlib.Path(path).is_dir():
                 self.setText(path)
                 if self.path_type == "input":
-                    self.parent().home_tab.input_tree.populate_tree(pathlib.Path(path))
+                    self.main_window.home_tab.input_tree.populate_tree(pathlib.Path(path))
                 elif self.path_type == "output":
-                    self.parent().home_tab.output_tree.populate_tree(pathlib.Path(path))
+                    self.main_window.home_tab.output_tree.populate_tree(pathlib.Path(path))
 
 def apply_glow_effect(widget):
     glow_effect = QtWidgets.QGraphicsDropShadowEffect()

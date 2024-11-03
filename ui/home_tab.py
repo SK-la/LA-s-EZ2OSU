@@ -2,9 +2,10 @@ import asyncio
 import pathlib
 import urllib.parse
 
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 
 from bin.Dispatch_file import process_file
+from bin.aio import start_conversion
 
 
 class HomeTab(QtWidgets.QWidget):
@@ -29,7 +30,12 @@ class HomeTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def start_conversion(self):
-        self.parent.start_conversion()
+        input_path = urllib.parse.unquote_plus(self.parent.input_path.text())
+        output_path = self.parent.output_path.text()
+        settings = self.parent.get_conversion_settings()
+        cache_folder = pathlib.Path("hash_cache")
+
+        asyncio.create_task(start_conversion(input_path, output_path, settings, cache_folder))
 
 class FileTreeWidget(QtWidgets.QTreeWidget):
     def __init__(self, parent, tree_type, main_window):
@@ -75,7 +81,7 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
                     self.main_window.output_path.setText(str(path))
 
     def contextMenuEvent(self, event):
-        item = self.itemAt(event.pos())
+        item = self.itemAt(event.position().toPoint())
         if item:
             menu = QtWidgets.QMenu(self)
             if self.tree_type == "input":
@@ -84,7 +90,7 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
             elif self.tree_type == "output":
                 delete_action = menu.addAction("删除")
                 delete_action.triggered.connect(lambda: self.delete_file(item))
-            menu.exec_(event.globalPos())
+            menu.exec(event.globalPos())
 
     async def convert_file(self, item):
         file_path = pathlib.Path(item.text(0))

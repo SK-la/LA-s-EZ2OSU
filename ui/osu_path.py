@@ -1,7 +1,9 @@
 #ui/osu_path.py
 import pathlib
 import winreg
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
+from PyQt6.QtWidgets import QFileDialog, QMessageBox
+
 
 def get_osu_songs_path(parent=None):
     try:

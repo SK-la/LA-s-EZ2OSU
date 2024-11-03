@@ -1,16 +1,16 @@
+#ui/MainWindow.py
 import asyncio
 import pathlib
 import urllib.parse
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QStatusBar
-from qasync import asyncSlot
+from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QMessageBox, QMainWindow
 
-from bin.aio import start_conversion
 from bin.config import get_config
 from ui.layouts import setup_main_layout
 from ui.osu_path import get_osu_songs_path
-from ui.settings import ConversionSettings
+from ui.settings import ConversionSettings, ConversionWorker
 from ui.styling import set_window_icon, set_background_image
 from ui.translations import load_translations, get_system_language
 
@@ -18,17 +18,35 @@ from ui.translations import load_translations, get_system_language
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.config = get_config()
         self.setAcceptDrops(True)
         self.settings = QtCore.QSettings("LAZ", "EZ2OSU")
-        self.config = get_config()
         system_language = get_system_language()
         self.translations = load_translations(system_language)
-        self.status_bar = QStatusBar()
+
+        # 初始化所有需要的属性
+        self.status_bar = QtWidgets.QStatusBar()
+        self.auto_create_output_folder = None
+        self.home_tab = None
+        self.input_path = None
+        self.output_path = None
+        self.start_button = None
+        self.include_audio = None
+        self.include_images = None
+        self.remove_empty_columns = None
+        self.lock_cs_set = None
+        self.lock_cs_num_combobox = None
+        self.convert_sv = None
+        self.convert_sample_bg = None
 
         self.initUI()
-        self.update_language()
         self.load_settings()
+        self.update_language()
+
         self.restore_window_position()
+        self.worker_thread = QtCore.QThread()
+        # 延迟初始化
+        QTimer.singleShot(0, self.delayed_initialization)
 
     def initUI(self):
         self.setWindowTitle('LAs EZ2OSU')
@@ -43,6 +61,14 @@ class MainWindow(QMainWindow):
         self.auto_create_output_folder.stateChanged.connect(self.handle_auto_create_output_folder)
         self.setStatusBar(self.status_bar)  # 添加状态栏
 
+        # 准备回调字典
+        callbacks = {
+            "select_input": self.select_input,
+            "select_output": self.select_output,
+            "handle_auto_create_output_folder": self.handle_auto_create_output_folder,
+        }
+    def delayed_initialization(self):
+        pass
     def show_notification(self, message):
         self.status_bar.showMessage(message, 3000)  # 显示消息3秒
 
@@ -76,31 +102,49 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(self, "错误", "未选择 osu! 安装路径，请手动设置输出文件夹。")
                     self.auto_create_output_folder.setChecked(False)
 
-    @asyncSlot()
-    async def start_conversion(self):
-        input_path = urllib.parse.unquote_plus(self.input_path.text())
-        output_path = self.output_path.text()
-        settings = self.get_conversion_settings()
-        self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
+    def start_conversion_thread(self):
+        self.worker = ConversionWorker(
+            input_path=urllib.parse.unquote_plus(self.input_path.text()),
+            output_path=self.output_path.text(),
+            settings=self.get_conversion_settings(),
+            cache_folder=pathlib.Path("hash_cache"),
+        )
+        self.worker.moveToThread(self.worker_thread)
+        # 连接信号和槽
+        self.worker.conversion_finished.connect(self.conversion_finished_handler)
+        self.worker_thread.started.connect(self.worker.run_conversion)
 
+        # 开始线程
+        self.worker_thread.start()
+
+    def conversion_finished_handler(self):
+        """处理转换完成的槽函数"""
+        self.show_conversion_complete_notification()
+        # 清理工作，例如删除 worker 和 thread
+        self.worker.deleteLater()
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        self.worker_thread.deleteLater()
+
+    def start_conversion(self):
         # 自动创建输出文件夹
         if self.auto_create_output_folder.isChecked():
             osu_songs_path = pathlib.Path(self.settings.value("osu_songs_path"))
             output_path = self.create_output_folder(osu_songs_path)
             self.output_path.setText(str(output_path))
         else:
-            output_path = self.create_output_folder(pathlib.Path(output_path))
-        # 定义哈希缓存的基础文件夹
-        cache_folder = pathlib.Path("hash_cache")
-        # 调用异步处理脚本
-        await start_conversion(input_path, output_path, settings, cache_folder)
+            output_path = self.output_path.text()
+
+        # 确保使用self.input_path来访问属性
+        input_path = urllib.parse.unquote_plus(self.input_path.text())
+
+        # 使用多线程启动转换
+        self.start_conversion_thread()
         self.update_file_trees(pathlib.Path(input_path), pathlib.Path(output_path))
 
-        # 显示转换完成通知
-        self.show_conversion_complete_notification()
 
     def show_conversion_complete_notification(self):
-        QMessageBox.information(self, "转换完成", "文件转换已完成。")
+        QMessageBox.information(self, "Message", "程序结束")
 
     def create_output_folder(self, base_path):
         set_output_folder = base_path / self.config.source
@@ -139,6 +183,7 @@ class MainWindow(QMainWindow):
         self.input_path.setText(self.settings.value("input_path", ""))
         self.output_path.setText(self.settings.value("output_path", ""))
         self.config.source = self.settings.value("source", "")
+        self.config.specific_numbers = self.settings.value("specific_numbers", [])
         settings = ConversionSettings.load_settings(self.settings)
         self.include_audio.setChecked(settings.include_audio)
         self.include_images.setChecked(settings.include_images)
@@ -167,6 +212,6 @@ class MainWindow(QMainWindow):
             lock_cs_num=self.lock_cs_num_combobox.currentText(),
             convert_sv=self.convert_sv.isChecked(),
             convert_sample_bg=self.convert_sample_bg.isChecked(),
-            auto_create_output_folder=self.auto_create_output_folder.isChecked()
+            auto_create_output_folder=self.auto_create_output_folder.isChecked(),
         )
         return settings

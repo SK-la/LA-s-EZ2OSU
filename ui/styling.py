@@ -1,7 +1,9 @@
 #ui/styling.py
 import pathlib
-from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+
+from PyQt6 import QtGui, QtWidgets
+from PyQt6.QtCore import Qt
+
 
 def set_window_icon(window):
     icon_path = pathlib.Path(__file__).parent.parent / 'BGi' / 'icon.png'
@@ -22,7 +24,7 @@ def set_background_image(window):
     painter.end()
 
     label.setPixmap(dark_pixmap)
-    label.setAlignment(Qt.AlignCenter)
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     label.setStyleSheet("background: transparent; border: none;")
     label.lower()
 
@@ -122,6 +124,21 @@ line_edit_style = """
         property-alignment: 'AlignCenter';  /* 确保焦点状态下居中对齐 */
     }
 """
+clm_button_style = """
+    QPushButton {
+        background-color: rgba(0, 0, 0, 120);
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #555;
+    }
+    QPushButton:hover {
+        background-color: rgba(56, 120, 200, 100);
+    }
+    QPushButton:pressed {
+        background-color: rgba(56, 120, 200, 150);
+    }
+"""
 
 drag_area_style = """
     QFrame {
@@ -133,8 +150,9 @@ radio_button_style = """
     QRadioButton {
         background-color: rgba(0, 0, 0, 120);
         color: #fff;
-        padding: 5px;
+        padding: 5px 10px;
         border-radius: 5px;
+        margin-right: -5px;  /* 调整按钮之间的间距 */
     }
     QRadioButton::indicator {
         width: 20px;

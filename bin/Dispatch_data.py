@@ -1,5 +1,5 @@
 #Dispatch_data.py
-from bin.SV import get_sv
+from mod.SV import get_sv
 from bin.Samples import get_samples
 from bin.config import get_config
 from bin.conv_bmson import bms
@@ -11,7 +11,7 @@ from mod.lock_cs import lock_cs
 
 logger = setup_custom_logger(__name__)
 
-def dispatch(data, settings):
+async def dispatch(data, settings):
     config = get_config()
     info = get_info(data, config)
     audio_data = get_samples(data, info, settings)

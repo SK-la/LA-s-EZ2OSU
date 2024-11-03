@@ -1,17 +1,18 @@
 import aiofiles
 import asyncio
 import datetime
-import pathlib
-from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from bin.Dispatch_file import process_file
 from bin.utils import setup_custom_logger
 
 logger = setup_custom_logger(__name__)
-semaphore = asyncio.Semaphore(50)  # 限制并发任务数量
-executor = ThreadPoolExecutor(max_workers=8)  # 设置线程池
+semaphore = asyncio.Semaphore(200)  # 限制并发任务数量
 
 async def process_folder(folder_path, output_folder_path, settings, error_list, cache_folder):
+    folder_path = Path(folder_path)
+    output_folder_path = Path(output_folder_path)
+    cache_folder = Path(cache_folder)
     for bmson_file in folder_path.glob("*.bmson"):
         async with semaphore:
             try:
@@ -21,8 +22,8 @@ async def process_folder(folder_path, output_folder_path, settings, error_list, 
                 logger.error(f"Error processing file {bmson_file}: {e}")
 
 async def start_conversion(input_folder_path, output_folder_path, settings, cache_folder):
-    input_folder_path = pathlib.Path(input_folder_path)
-    output_folder_path = pathlib.Path(output_folder_path)
+    input_folder_path = Path(input_folder_path)
+    output_folder_path = Path(output_folder_path)
     error_list = []
 
     tasks = []
@@ -35,7 +36,7 @@ async def start_conversion(input_folder_path, output_folder_path, settings, cach
     # 汇总出错的文件或文件夹
     if error_list:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_folder = pathlib.Path("log")
+        log_folder = Path("log")
         log_folder.mkdir(exist_ok=True)  # 确保 log 文件夹存在
         error_log_file = log_folder / f"error_log_{timestamp}_conversion.txt"
 

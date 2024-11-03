@@ -28,7 +28,7 @@ def get_samples(data, info, settings):
     samples = []
     if hasattr(settings, 'convert_sample_bg') and settings.convert_sample_bg:
         invalid_notes = [note for note in all_notes if not (1 <= note['x'] <= 16)]
-        invalid_notes.sort(key=lambda note: note['y'])
+        invalid_notes.sort(key=lambda notes: notes['y'])
         reset_invalid_notes = [
             {'x': note['x'], 'y': note['y'] - invalid_notes[0]['y'], 'name': note.get('name', 'unknown')} for note in
             invalid_notes]

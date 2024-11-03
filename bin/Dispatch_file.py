@@ -4,21 +4,19 @@ import json
 import os
 import pathlib
 import re
+
 import aiofiles
 
 from bin.Dispatch_data import dispatch
 from bin.utils import setup_custom_logger, load_hash_cache, save_hash_cache
 
 logger = setup_custom_logger(__name__)
-BATCH_SIZE = 1000
+BATCH_SIZE = 2000
 semaphore = asyncio.Semaphore(2000)
-
-def add_long_path_prefix(path):
-    return r"\\?\{}".format(path)
 
 async def process_file(bmson_file, output_folder, settings, error_list, cache_folder):
     try:
-        output_folder = pathlib.Path(add_long_path_prefix(str(output_folder)))
+        bmson_file = pathlib.Path(bmson_file)
         cache_folder = cache_folder / bmson_file.parent.name
         hash_cache = await load_hash_cache(cache_folder)
 
@@ -26,16 +24,22 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
             data = json.loads(await file.read())
             data['input_file_path'] = str(bmson_file)
 
-        osu_content, info, audio_data = dispatch(data, settings)
+        osu_content, info, audio_data = await dispatch(data, settings)
         logger.info(f"Main audio: {audio_data.main_audio}")
         new_md5 = hashlib.md5(osu_content.encode('utf-8')).hexdigest()
 
-        song_folder = pathlib.Path(add_long_path_prefix(str(output_folder / info.new_folder)))
+        # 检查文件夹名称是否带后缀
+        parent_name_suffix = extract_parent_name_suffix(bmson_file.parent.name)
+        if parent_name_suffix:
+            # 如果存在后缀，则将其添加到 info.new_folder 后面
+            info.new_folder += parent_name_suffix
+
+        song_folder = pathlib.Path(output_folder) / info.new_folder
         song_folder.mkdir(parents=True, exist_ok=True)
-        sub_folder = pathlib.Path(add_long_path_prefix(str(song_folder / info.sub_folder)))
+        sub_folder = song_folder / info.sub_folder
         sub_folder.mkdir(parents=True, exist_ok=True)
 
-        osu_file_path = pathlib.Path(add_long_path_prefix(str(song_folder / f"{info.osu_filename}.osu")))
+        osu_file_path = song_folder / f"{info.osu_filename}.osu"
 
         if osu_file_path.exists():
             existing_md5 = hash_cache.get(str(osu_file_path))
@@ -64,28 +68,30 @@ async def process_file(bmson_file, output_folder, settings, error_list, cache_fo
         error_list.append((bmson_file, str(e)))
         return None
 
+    # finally:
+    #     # 确保文件句柄关闭
+    #     if 'file' in locals():
+    #         await file.close()
+
 async def process_batches(files, existing_file_names_song, existing_file_names_sub, settings, song_folder,
                           sub_folder, info, audio_data):
     for i in range(0, len(files), BATCH_SIZE):
         batch = files[i:i + BATCH_SIZE]
         tasks = []
         for file_path in batch:
-            file_path = pathlib.Path(add_long_path_prefix(str(file_path)))
-            if settings.include_images and file_path.suffix in {'.jpg', '.png'} and file_path.stem == pathlib.Path(
-                    info.image).stem:
+            file_path = pathlib.Path(file_path)
+            if settings.include_images and file_path.suffix in {'.jpg', '.png'} and file_path.stem == pathlib.Path(info.image).stem:
                 tasks.append(
                     copy_if_not_exists(file_path, song_folder / f"{info.img_filename}", existing_file_names_song))
 
             if settings.include_audio:
-                if file_path.suffix in {'.mp3', '.wav', '.ogg'} and file_path.stem == pathlib.Path(
-                        audio_data.main_audio).stem:
+                if file_path.suffix in {'.mp3', '.wav', '.ogg'} and file_path.stem == pathlib.Path(audio_data.main_audio).stem:
                     logger.info(f"匹配的主音频: {file_path}")
                     tasks.append(
                         copy_if_not_exists(file_path, song_folder / f"{info.song}", existing_file_names_song))
                     tasks.append(
                         copy_if_not_exists(file_path, sub_folder / file_path.name, existing_file_names_sub))
-                elif file_path.suffix in {'.mp3', '.wav', '.ogg'} and file_path.stem != pathlib.Path(
-                        audio_data.main_audio).stem:
+                elif file_path.suffix in {'.mp3', '.wav', '.ogg'} and file_path.stem != pathlib.Path(audio_data.main_audio).stem:
                     if not await compare_file_names(existing_file_names_sub, (sub_folder / file_path.name).name):
                         tasks.append(
                             copy_if_not_exists(file_path, sub_folder / file_path.name, existing_file_names_sub))
@@ -95,10 +101,7 @@ async def process_batches(files, existing_file_names_song, existing_file_names_s
 
         await asyncio.gather(*tasks)
 
-    # finally:
-    #     # 确保文件句柄关闭
-    #     if 'file' in locals():
-    #         await file.close()
+
         # 先进行所有文件的对比和忽略操作
         # for file_path in files:
         #     file_path = pathlib.Path(file_path)
@@ -138,16 +141,20 @@ async def compare_file_names(existing_file_names, file_name):
 
 async def scan_folder(folder_path):
     files = []
-    folder_path = os.path.normpath(folder_path)
     for root, _, filenames in os.walk(folder_path):
-        root = os.path.normpath(root)
         for filename in filenames:
             file_path = os.path.join(root, filename)
-            file_path = os.path.normpath(file_path)
             if os.path.isfile(file_path):
                 files.append(file_path)
     return files
 
+def extract_parent_name_suffix(parent_name):
+    # 使用正则表达式查找 '_数字' 形式的后缀
+    match = re.search(r'_\d+$', parent_name)
+    return match.group(0) if match else ''
+
 def sanitize_folder_name(name):
     return re.sub(r'[^\w\-_.?]', '_', name)
 
+def add_long_path_prefix(path):
+    return r"r{}".format(path)

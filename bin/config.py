@@ -20,7 +20,8 @@ class Config:
                 'Tags': '',
                 'noS': 'N',
                 'noP': 'N',
-                'Packset': 'N'
+                'Packset': 'N',
+                'SpecificNumbers': '1,2,3,4,5,6,7,8,9,10,12,14,16,18',
             }
             with open(self.config_file, 'w', encoding='utf-8') as configfile:
                 self.config.write(configfile)
@@ -35,6 +36,7 @@ class Config:
         self.noS = self.config.get('DEFAULT', 'noS')
         self.noP = self.config.get('DEFAULT', 'noP')
         self.packset = self.config.get('DEFAULT', 'Packset')
+        self.specific_numbers = self.config.get('DEFAULT', 'SpecificNumbers').split(',')
 
     def save_config(self, settings):
         self.config['DEFAULT'] = {
@@ -45,7 +47,8 @@ class Config:
             'Tags': settings['tags'],
             'noS': settings['noS'],
             'noP': settings['noP'],
-            'Packset': settings['packset']
+            'Packset': settings['packset'],
+            'SpecificNumbers': ','.join(settings['specific_numbers'])
         }
         with open(self.config_file, 'w', encoding='utf-8') as configfile:
             self.config.write(configfile)
