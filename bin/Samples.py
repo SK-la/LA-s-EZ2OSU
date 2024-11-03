@@ -14,29 +14,23 @@ def get_samples(data, info, settings):
     y_start, y_end, y_min, all_notes = get_y_values(data)
 
     main_audio = ''
-    for channel in data['sound_channels']:
-        for note in channel['notes']:
-            if 'y' in note and note['y'] == y_start:
-                main_audio = channel.get('name', '')
-                break
-        if main_audio:
+    for note in all_notes:
+        if note['y'] == y_start and not (1 <= note['x'] <= 16):
+            main_audio = note['name']
             break
 
     song_lg = round((y_end - y_start) * info.MpB)
     offset = round((y_min - y_start) * info.MpB)
 
     samples = []
-    if hasattr(settings, 'convert_sample_bg') and settings.convert_sample_bg:
-        invalid_notes = [note for note in all_notes if not (1 <= note['x'] <= 16)]
-        invalid_notes.sort(key=lambda notes: notes['y'])
-        reset_invalid_notes = [
-            {'x': note['x'], 'y': note['y'] - invalid_notes[0]['y'], 'name': note.get('name', 'unknown')} for note in
-            invalid_notes]
-
-        for note in reset_invalid_notes:
+    if settings.convert_sample_bg:
+        reset_notes = [{'x': note['x'], 'y': note['y'] - all_notes[0]['y'], 'name': note.get('name', '')} for note in all_notes]
+        invalid_notes = [note for note in reset_notes if not (1 <= note['x'] <= 16)]
+        for note in invalid_notes:
             hs = note['name'].replace("sound\\", f"{info.sub_folder}/")
-            note_time = calculate_pulse_time(note['y'], info) + offset
-            samples.append(f"5,{note_time},0,\"{hs}\"")
+            if note['name'] != main_audio:
+                note_time = calculate_pulse_time(note['y'], info)
+                samples.append(f"5,{note_time},0,\"{hs}\"")
 
     audio_data = AudioData(
         samples=samples,
@@ -50,7 +44,6 @@ def get_samples(data, info, settings):
     return audio_data
 
 
-
 def calculate_pulse_time(y, info):
     return round(y * info.MpB)
 
@@ -59,11 +52,13 @@ def get_y_values(data):
     valid_notes = []
 
     for channel in data['sound_channels']:
+        channel_name = channel.get('name', '')
         for note in channel['notes']:
-            if 'x' in note and 'y' in note:
-                all_notes.append(note)
-                if 1 <= note['x'] <= 16:
-                    valid_notes.append(note)
+            note['name'] = channel_name  # 将 channel 的 name 属性添加到 note 中
+            all_notes.append(note)
+            if 1 <= note['x'] <= 16:
+                valid_notes.append(note)
+            logger.debug(f"Processed note: {note}")
 
     all_notes.sort(key=lambda notes: notes['y'])
     valid_notes.sort(key=lambda notes: notes['y'])

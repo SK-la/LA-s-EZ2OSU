@@ -5,7 +5,6 @@ import urllib.parse
 from PyQt6 import QtWidgets
 
 from bin.Dispatch_file import process_file
-from bin.aio import start_conversion
 
 
 class HomeTab(QtWidgets.QWidget):
@@ -29,13 +28,14 @@ class HomeTab(QtWidgets.QWidget):
         layout.addLayout(tree_layout)
         self.setLayout(layout)
 
-    def start_conversion(self):
-        input_path = urllib.parse.unquote_plus(self.parent.input_path.text())
-        output_path = self.parent.output_path.text()
-        settings = self.parent.get_conversion_settings()
-        cache_folder = pathlib.Path("hash_cache")
-
-        asyncio.create_task(start_conversion(input_path, output_path, settings, cache_folder))
+    # async def start_conversion(self):
+    #     input_path = urllib.parse.unquote_plus(self.parent.input_path.text())
+    #     output_path = self.parent.output_path.text()
+    #     settings = self.parent.get_conversion_settings()
+    #     cache_folder = pathlib.Path("hash_cache")
+    #
+    #     await start_conversion(input_path, output_path, settings, cache_folder)
+    #     self.parent.show_conversion_complete_notification()
 
 class FileTreeWidget(QtWidgets.QTreeWidget):
     def __init__(self, parent, tree_type, main_window):
@@ -96,9 +96,8 @@ class FileTreeWidget(QtWidgets.QTreeWidget):
         file_path = pathlib.Path(item.text(0))
         if file_path.exists() and file_path.is_file():
             output_path = pathlib.Path(self.main_window.output_path.text())
-            cache_folder = pathlib.Path("hash_cache")
             await process_file(
-                file_path, output_path, self.main_window.settings, [], cache_folder)
+                file_path, output_path, self.main_window.settings, [])
             self.main_window.show_notification(f"文件 {file_path} 转换完成")
 
     def delete_file(self, item):

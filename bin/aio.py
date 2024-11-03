@@ -7,21 +7,20 @@ from bin.Dispatch_file import process_file
 from bin.utils import setup_custom_logger
 
 logger = setup_custom_logger(__name__)
-semaphore = asyncio.Semaphore(200)  # 限制并发任务数量
+semaphore = asyncio.Semaphore(2000)  # 限制并发任务数量
 
-async def process_folder(folder_path, output_folder_path, settings, error_list, cache_folder):
+async def process_folder(folder_path, output_folder_path, settings, error_list):
     folder_path = Path(folder_path)
     output_folder_path = Path(output_folder_path)
-    cache_folder = Path(cache_folder)
     for bmson_file in folder_path.glob("*.bmson"):
         async with semaphore:
             try:
-                await process_file(bmson_file, output_folder_path, settings, error_list, cache_folder)
+                await process_file(bmson_file, output_folder_path, settings, error_list)
             except Exception as e:
                 error_list.append((bmson_file, str(e)))
                 logger.error(f"Error processing file {bmson_file}: {e}")
 
-async def start_conversion(input_folder_path, output_folder_path, settings, cache_folder):
+async def start_conversion(input_folder_path, output_folder_path, settings):
     input_folder_path = Path(input_folder_path)
     output_folder_path = Path(output_folder_path)
     error_list = []
@@ -29,7 +28,7 @@ async def start_conversion(input_folder_path, output_folder_path, settings, cach
     tasks = []
     for folder in input_folder_path.iterdir():
         if folder.is_dir():
-            tasks.append(process_folder(folder, output_folder_path, settings, error_list, cache_folder))
+            tasks.append(process_folder(folder, output_folder_path, settings, error_list))
 
     await asyncio.gather(*tasks)
 
