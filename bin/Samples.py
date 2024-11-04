@@ -44,7 +44,7 @@ def get_samples(data, info, settings):
 
     print(f"main_audio: {audio_data.main_audio}, pulses: Start {y_start}, End {y_end}, Total duration {song_lg} ms, Offset {offset} ms")
     logger.info(f"main_audio: {audio_data.main_audio}, pulses: Start {y_start}, End {y_end}, Total duration {song_lg} ms, Offset {offset} ms")
-    return audio_data
+    return audio_data, y_start
 
 
 def calculate_pulse_time(y, info):

@@ -1,4 +1,4 @@
-#Dispatch_data.py
+#bin/Dispatch_data.py
 from bin.Samples import get_samples
 from bin.config import get_config
 from bin.conv_bmson import bms
@@ -14,7 +14,7 @@ logger = setup_custom_logger(__name__)
 async def dispatch(data, settings):
     config = get_config()
     info = get_info(data, config)
-    audio_data = get_samples(data, info, settings)
+    audio_data, y_start = get_samples(data, info, settings)
     notes_obj, cs = bms(data, info, audio_data)
     new_cs = cs
     if info.osumode == 3:
@@ -22,8 +22,8 @@ async def dispatch(data, settings):
             notes_obj = lock_cs(notes_obj, cs, int(settings.lock_cs_num))
         if settings.remove_empty_columns:
             notes_obj, new_cs = remove_empty_columns(notes_obj, cs)
+    sv = get_sv(data, audio_data, info, y_start) if settings.convert_sv else ''
 
-    sv = get_sv(data, audio_data, info, settings) if settings.convert_sv else ''
     osu_content = generate_osu_file(config, info, sv, audio_data, notes_obj, new_cs)
 
     logger.info(f"New Folder Name: {info.new_folder}")

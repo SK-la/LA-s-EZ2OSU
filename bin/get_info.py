@@ -35,12 +35,12 @@ def get_info(data, config):
     cs = {'5k': 7, '7k': 8, '9k': 9, '10k': 12, '14k': 16}.get(mode_hint, 18)
 
     mode = {5: '5k', 8: '7k1s', 12: '10k2s', 16: '10k4e2s'}.get(cs, '')
-    level_value = data['info'].get('level', 1)
-    level = f"LV.{level_value}" if level_value != 1 else ''
+    level = data['info'].get('level', 1)
+    lv = f"LV.{level}" if level != 1 or level != 0 else ''
 
     chart_name = data['info'].get('chart_name', '').split('1p')
     ez_mode = chart_name[0].strip().upper() if chart_name else ''
-    osumode = 2 if ez_mode == 'catch' else 3
+    osumode = 2 if ez_mode == 'CATCH' else 3
         
     chart = chart_name[1].strip().upper() if len(chart_name) > 1 and chart_name[1].strip() else 'NM'
 
@@ -64,14 +64,14 @@ def get_info(data, config):
 
     new_folder_name = f"{artist} - {title}".replace('.wav', '')
     sub_folder_name = f"sound" #改
-    ver = f"[{ez_mode}] {chart} {level}" if level else f"[{ez_mode}] {chart}"
+    ver = f"[{ez_mode}] {chart} {lv}" if lv else f"[{ez_mode}] {chart}"
     osu_filename = f"{artist} - {title} ({config.creator}) [{ver}]"
     if config.packset == 'Y':
         osu_filename += '_pack'
     img_filename = f"{artist} - {title}{image_diff}"
 
     bpm=data['info'].get('init_bpm', 120.0)
-    resolution=int(data['info'].get('resolution', 240))
+    resolution=int(data['info'].get('resolution', 48))
 
 
     info = Info(
@@ -82,7 +82,7 @@ def get_info(data, config):
         bpms=round(60000 / bpm, 12),
         resolution=resolution,
         m_p_b=60000 / (bpm * resolution),
-        lv=level,
+        lv=lv,
         ver=ver,
         diff=chart,
         song=f"{artist} - {title}.wav",

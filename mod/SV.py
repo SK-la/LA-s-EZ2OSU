@@ -1,22 +1,30 @@
-#SV.py
+def get_sv(data, audio_data, info, y_start):
+    bpm = audio_data.bpm
+    base_offset = info.offset
 
-def get_sv(data, audio_data, info, settings):
-    resolution = int(info.resolution*4)
     def calculate_pulse_time(y):
-        return round(y * info.MpB )
-    
-    sv = []
-    if settings.SV:
-        bpm_events=data.get('bpm_events', []),
-        stop_events=data.get('stop_events', [])
-        bpm_y = bpm_events['y']
-        stop_y = stop_events['y']
-        sv_offset = calculate_pulse_time(bpm_y) + audio_data.offset
-        sv_length = stop_y
+        return round(y * info.MpB)
 
-        sv.append(f"{sv_offset},{sv_length},4,1,1,100,1,0\n")
-    else:
-        sv = ''
+    def calculate_stop_bpms(bpm, duration):
+        return (60000 / bpm) * (duration / 100.0)
+
+    sv = []
+    bpm_events = data.get('bpm_events', [])
+    stop_events = data.get('stop_events', [])
+
+    for event in bpm_events:
+        bpm_y = event['y']
+        bpm_value = event['bpm']
+        sv_offset = calculate_pulse_time(bpm_y - y_start) + base_offset
+        sv_bpms = 60000 / bpm_value
+        sv.append(f"{sv_offset},{sv_bpms},4,1,1,100,1,0\n")
+
+    for event in stop_events:
+        stop_y = event['y']
+        stop_duration = event.get('duration', 0)
+        sv_offset = calculate_pulse_time(stop_y - y_start) + base_offset
+        sv_bpms = calculate_stop_bpms(bpm, stop_duration)
+        sv.append(f"{sv_offset},{sv_bpms},4,1,1,100,1,0\n")
 
     return sv
 
@@ -38,7 +46,7 @@ def process_lines(data):
 def calculate_timing_points(data, current_time, bpm):
     points = {}
 
-    if len(data['bpm_events']) > 0:
+    if data.get('bpm_events'):
         time_elapsed = 0.0
 
         for i, tc in enumerate(data['bpm_events']):
@@ -47,21 +55,21 @@ def calculate_timing_points(data, current_time, bpm):
             stop_time = get_stop_offset(bpm, tc['y'])
 
             b = tc['bpm']
-            if 'IsNegative' in tc and tc['IsNegative']:
+            if tc.get('IsNegative'):
                 b = -tc['bpm']
             points[current_time + stop_time + time_elapsed] = b
             time_elapsed += get_bpm_change_offset(i, data)
 
-    if len(data['stop_events']) > 0:
+    if data.get('stop_events'):
         time_elapsed = 0.0
         for stop_index, stop in enumerate(data['stop_events']):
-            if len(data['bpm_events']) > 0:
+            if data.get('bpm_events'):
                 local_time_elapsed = 0.0
                 stop_time = get_stop_offset(bpm, stop['Position'])
                 for i, bpm_change in enumerate(data['bpm_events']):
                     if i == 0:
                         local_time_elapsed += get_track_duration_given_bpm(bpm, data['MeasureScale']) * (bpm_change['y'] / 100.0)
-                    if (i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > stop['Position'] and stop['Position'] >= bpm_change['y']) or (i + 1 == len(data['bpm_events']) and stop['Position'] >= bpm_change['y']):
+                    if (i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > stop['Position'] and stop['Position'] >= bpm_change['y']):
                         start_at = current_time + local_time_elapsed + stop_time + (get_track_duration_given_bpm(bpm_change['bpm'], data['MeasureScale']) * ((stop['Position'] - bpm_change['y']) / 100.0))
                         end_at = start_at + get_stop_duration(bpm_change['bpm'], stop['Duration'])
 
@@ -91,15 +99,12 @@ def calculate_timing_points(data, current_time, bpm):
     return points
 
 def get_track_duration_given_bpm(bpm, measure_scale):
-    # 计算给定 BPM 和测量比例的轨道持续时间
     return 60000 / (bpm * measure_scale)
 
 def get_stop_offset(bpm, position):
-    # 计算 STOP 指令的偏移量
     return (60000 / bpm) * (position / 100.0)
 
 def get_bpm_change_offset(index, data):
-    # 计算 BPM 变化的偏移量
     if index + 1 < len(data['bpm_events']):
         current_bpm = data['bpm_events'][index]['bpm']
         next_position = data['bpm_events'][index + 1]['y']
@@ -108,14 +113,13 @@ def get_bpm_change_offset(index, data):
     return 0
 
 def get_stop_duration(bpm, duration):
-    # 计算 STOP 持续时间
     return (60000 / bpm) * (duration / 100.0)
 
 def get_offset_start(data, index, message, start_track_with_bpm):
     measure = len(message) / 2
     note_pos = (index / measure) * 100.0
 
-    if len(data['bpm_events']) == 0 and len(data['stop_events']) == 0:
+    if not data.get('bpm_events') and not data.get('stop_events'):
         return get_track_duration_given_bpm(start_track_with_bpm, data['MeasureScale']) * (note_pos / 100.0)
 
     time_to_add = 0.0
@@ -127,15 +131,14 @@ def get_offset_start(data, index, message, start_track_with_bpm):
             else:
                 time_to_add += get_track_duration_given_bpm(start_track_with_bpm, data['MeasureScale']) * (t['y'] / 100.0)
 
-        if ((i + 1 == len(data['bpm_events'])) and note_pos >= t['y']) or (i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > note_pos and note_pos >= t['y']):
+        if (i + 1 == len(data['bpm_events']) and note_pos >= t['y']) or (i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > note_pos and note_pos >= t['y']):
             time_to_add += get_track_duration_given_bpm(t['bpm'], data['MeasureScale']) * ((note_pos - t['y']) / 100.0)
             break
         elif i + 1 < len(data['bpm_events']):
             time_to_add += get_track_duration_given_bpm(t['bpm'], data['MeasureScale']) * ((data['bpm_events'][i + 1]['y'] - t['y']) / 100.0)
 
-    if len(data['bpm_events']) == 0:
+    if not data.get('bpm_events'):
         time_to_add += get_track_duration_given_bpm(start_track_with_bpm, data['MeasureScale']) * (note_pos / 100.0)
-    if len(data['stop_events']) > 0:
+    if data.get('stop_events'):
         time_to_add += get_stop_offset(start_track_with_bpm, note_pos)
     return time_to_add
-

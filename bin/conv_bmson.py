@@ -1,4 +1,4 @@
-# conv_bmson.py
+#bin/conv_bmson.py
 
 def bms(data, info, audio_data):
     cs = info.CS
