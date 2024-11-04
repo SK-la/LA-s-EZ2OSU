@@ -36,12 +36,13 @@ def get_info(data, config):
 
     mode = {5: '5k', 8: '7k1s', 12: '10k2s', 16: '10k4e2s'}.get(cs, '')
     level = data['info'].get('level', 1)
-    lv = f"LV.{level}" if level != 1 or level != 0 else ''
+    lv = f"LV.{level}" if level not in [0, 1] else ''
 
     chart_name = data['info'].get('chart_name', '').split('1p')
     ez_mode = chart_name[0].strip().upper() if chart_name else ''
-    osumode = 2 if ez_mode == 'CATCH' else 3
-        
+    #osumode = 2 if ez_mode == 'CATCH' else 3
+    osumode = 3
+
     chart = chart_name[1].strip().upper() if len(chart_name) > 1 and chart_name[1].strip() else 'NM'
 
     eyecatch_image = data['info'].get('eyecatch_image', '')
@@ -58,7 +59,6 @@ def get_info(data, config):
     title = config.source if config.packset == 'Y' else sanitize_name(data['info'].get('title', ''))
 
     tags = f"{config.creator} {config.source} {mode} {ez_mode} {artist} {title}"
-
 
     bga_name = data.get('bga', {}).get('bga_header', [{}])[0].get('name', '')
 
