@@ -5,8 +5,8 @@ def get_sv(data, audio_data, info, y_start):
     def calculate_pulse_time(y):
         return round(y * info.MpB)
 
-    def calculate_stop_bpms(bpm, duration):
-        return (60000 / bpm) * (duration / 100.0)
+    def calculate_stop_bpms(set_bpm, duration):
+        return (60000 / set_bpm) * (duration / 100.0)
 
     sv = []
     bpm_events = data.get('bpm_events', [])
@@ -69,7 +69,7 @@ def calculate_timing_points(data, current_time, bpm):
                 for i, bpm_change in enumerate(data['bpm_events']):
                     if i == 0:
                         local_time_elapsed += get_track_duration_given_bpm(bpm, data['MeasureScale']) * (bpm_change['y'] / 100.0)
-                    if (i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > stop['Position'] and stop['Position'] >= bpm_change['y']):
+                    if i + 1 < len(data['bpm_events']) and data['bpm_events'][i + 1]['y'] > stop['Position'] and stop['Position'] >= bpm_change['y']:
                         start_at = current_time + local_time_elapsed + stop_time + (get_track_duration_given_bpm(bpm_change['bpm'], data['MeasureScale']) * ((stop['Position'] - bpm_change['y']) / 100.0))
                         end_at = start_at + get_stop_duration(bpm_change['bpm'], stop['Duration'])
 
